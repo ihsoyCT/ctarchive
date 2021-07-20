@@ -58,7 +58,6 @@ export const subreddit = {
       axios.get(subreddit.link.submission + '&ids=' + id).then((s) => {
         console.log(s);
         s.data.data[0].time = moment.unix(s.data.data[0].created_utc).format('llll');
-        console.log(marked(s.data.data[0].selftext));
         s.data.data[0].selftext = marked(s.data.data[0].selftext);
         subreddit.$el.innerHTML = subreddit.template.submissionCompiled(s.data.data[0]);
         axios.all(requests).then((p) => {

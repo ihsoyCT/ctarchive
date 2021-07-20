@@ -2,5 +2,5 @@ div(class='post')
     p(class='comment_title')
         a(href='index.html?subreddit=&author=' + author) #{author}
         | - Score: #{score} at #{time}
-    p #{body}
+    p !{body}
     div(class='children', id='t1_' + id)
