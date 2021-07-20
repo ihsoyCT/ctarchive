@@ -1,2 +1,20 @@
-p(data-id=id, class='submissionclass') #{author} - #{title} - Score:#{score} - Comments:#{num_comments} - 
-    a(href=url) Link
+div(class='submissionclass')
+    div(class='score') #{score}
+    div(class='main')
+        div(class='posted') Posted by 
+            a(href='index.html?subreddit=&author=' + author) #{author} 
+            | at #{time} 
+            | in 
+            a(href='index.html?subreddit=' + subreddit) #{subreddit}
+        div(class='title')
+            h3 #{title}
+        div
+            a(href=url) #{url}
+        div(class='commentlink')
+            a(href='index.html?comments=' + id) #{num_comments} Comments
+
+        div(class='post') !{selftext}
+    div(class='thumbnail')
+        img(src=thumbnail)
+
+div(id='t3_' + id)
