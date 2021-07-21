@@ -1,21 +1,32 @@
-import { subreddit } from './subreddit';
+import { subreddit } from "./subreddit";
 
 window.onload = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
+
   console.log(urlParams);
-  if (urlParams.get('subreddit') !== null) {
+  const mode = urlParams.get("mode");
+  
+  if(!urlParams.has(size)) urlParams.set("size", 100);
+
+  if (mode === "comments") {
     populateForm(urlParams);
+    urlParams.delete("mode");
+    subreddit.searchComments(urlParams);
+  } else if (urlParams.get("comments") !== null) {
+    subreddit.grabComments(urlParams.get("comments"), urlParams.get("id"));
+  } else {
+    populateForm(urlParams);
+    urlParams.delete("mode");
     subreddit.grabSubmissions(urlParams);
-  } else if (urlParams.get('comments') !== null) {
-    subreddit.grabComments(urlParams.get('comments'));
-  }
-  document.getElementById('content').appendChild(subreddit.$el);
+  }  
+
+  document.getElementById("content").appendChild(subreddit.$el);
 };
 
 function populateForm(urlParams) {
   urlParams.forEach((p, k) => {
-    console.log(k + ' => ' + p);
+    console.log(k + " => " + p);
     document.getElementById(k).value = p;
   });
 }

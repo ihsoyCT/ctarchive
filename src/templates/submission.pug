@@ -2,7 +2,9 @@ div(class='submissionclass')
     div(class='score') #{score}
     div(class='main')
         div(class='posted') Posted by 
-            a(href='index.html?subreddit=&author=' + author) #{author} 
+            a(href='https://reddit.com/user/' + author) #{author} 
+            a(href='index.html?mode=submissions&subreddit=&author=' + author) Submissions 
+            a(href='index.html?mode=comments&author=' + author) Comments 
             | at #{time} 
             | in 
             a(href='index.html?subreddit=' + subreddit) #{subreddit}

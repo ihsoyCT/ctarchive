@@ -1,8 +1,10 @@
-div(class=postClass)
-    p(class='comment_title', id=id)
+div(class='post')
+    p(class='comment_title') #{permalink}
+    p(class='comment_user')
         a(href='https://reddit.com/user/' + author) #{author} 
         a(href='index.html?mode=submissions&subreddit=&author=' + author) Submissions 
         a(href='index.html?mode=comments&author=' + author) Comments 
         | - Score: #{score} at #{time}
     p !{body}
-    div(class='children', id='t1_' + id)
+    div(class='post_navigation')
+        a(href='index.html?comments=' + link_id + '&id=' + id) Context
