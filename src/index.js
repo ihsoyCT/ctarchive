@@ -15,7 +15,7 @@ window.onload = () => {
     subreddit.searchComments(urlParams);
   } else if (urlParams.get("comments") !== null) {
     subreddit.grabComments(urlParams.get("comments"), urlParams.get("id"));
-  } else if (urlParams.has(subreddit)) {
+  } else if (urlParams.has('subreddit')) {
     populateForm(urlParams);
     urlParams.delete("mode");
     subreddit.grabSubmissions(urlParams);
