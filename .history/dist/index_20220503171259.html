@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Reddit Archive</title>
+    <style>
+      .children {
+        margin-left: 20px;
+      }
+      .score {
+        margin-top: auto;
+        margin-bottom: auto; /* width: 20px; */
+        padding-left: 8px; /* align-items: center; */ /* justify-content: center; */ /* align-self: center; */
+        width: 2%;
+      }
+      
+      .submissionclass {
+        height: auto;
+        background-color: lightgray;
+        margin: 20px 0px 20px 0px;
+        display: flex;
+      }
+
+      .main {
+        margin-left: 10px;
+      }
+
+      .thumbnail {
+        /* FLOAT: right; */
+        margin-left: auto;
+      }
+
+      div#content {
+        width: 80%;
+        margin: auto;
+      }
+
+      #submission a {
+        font-size: 10px;
+      }
+
+      #submission .post a {
+        font-size: 1rem;
+      }
+
+      #orhans {
+        background-color: red;
+      }
+
+      .posted {
+        font-size: 10px;
+      }
+      .thumbnail img {
+        max-width: 400px;
+      }
+      h3 {
+        margin: 0;
+      }
+      p.comment_title {
+        font-size: 10px;
+      }
+
+      .post {
+        background-color: lightgrey;
+        border: solid;
+        border-width: 1px;
+        margin-bottom: 5px;
+        font-size: 1rem;
+      }
+
+      
+      .post_highlight {
+        background-color: rgb(87, 131, 87);
+        border: solid;
+        border-width: 1px;
+        margin-bottom: 5px;
+        font-size: 1rem;
+      }
+
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <div class="error" id="error"></div>
+  <div class="left">
+    <a href="./index.html" id="back">Reset</a>
+    <a href="./about.html" id="back">Help/About/Contact</a>
+    <div id="searchform">
+      <form id="search_form">
+          <label for="mode">Comments/Submissions</label>
+          <select id="mode" name="mode">
+              <option value="submissions">Submissions</option>
+              <option value="comments">Comments</option>
+          </select>
+        <label for="subreddit"> Subreddit </label>
+        <input type="text" name="subreddit" id="subreddit" />
+        <label for="sort_type">Sort Type</label>
+        <select name="sort_type" id="sort_type">
+          <option value="created_utc">Time</option>
+          <option value="score">Score</option>
+          <option value="num_comments">Comments</option>
+        </select>
+        <label for="sort">Sort</label>
+        <select name="sort" id="sort">
+          <option value="desc">desc</option>
+          <option value="asc">asc</option>
+        </select>
+        <label for="size">Size:</label><input type="text" name="size" id="size" />
+        <label for="before">Before:</label>
+        <input type="date" name="before" id="before" />
+        <label for="after">After:</label>
+        <input type="date" name="after" id="after" />
+        <label for="author">Author:</label>
+        <input type="text" name="author" id="author" />
+        <label for="score">Score:</label>
+        <input type="text" name="score" id="score" />
+        <label for="num_comments">Number of comments:</label>
+        <input type="text" name="num_comments" id="num_comments" />
+        <label for="q">Search:</label>
+        <input type="text" name="q" id="q" />
+        <input type="submit" />
+      </form>
+    </div>
+  </div>
+  <div id="status"></div>
+  <div id="content"></div>
+  <div id="orphans"></div>
+  <body>
+    <script src="index.js"></script>
+  </body>
+</html>
