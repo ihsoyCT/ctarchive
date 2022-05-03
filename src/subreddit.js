@@ -91,6 +91,7 @@ export const subreddit = {
               s.data.data[0].time = moment
                 .unix(s.data.data[0].created_utc)
                 .format("llll");
+              s.data.data[0].selftext = marked.parse(s.data.data[0].selftext);
               subreddit.$el.innerHTML = subreddit.template.submissionCompiled(
                 s.data.data[0]
               );
@@ -106,6 +107,8 @@ export const subreddit = {
                       } else {
                         post.postClass = "post";
                       }
+
+                      post.body = marked.parse(post.body);
                       if (document.getElementById(post.parent_id)) {
                         document.getElementById(post.parent_id).innerHTML +=
                           subreddit.template.postCompiled(post);
@@ -137,6 +140,7 @@ export const subreddit = {
               s.data.data[0].time = moment
                 .unix(s.data.data[0].created_utc)
                 .format("llll");
+              s.data.data[0].selftext = marked.parse(s.data.data[0].selftext);
               subreddit.$el.innerHTML = subreddit.template.submissionCompiled(
                 s.data.data[0]
               );
@@ -163,7 +167,7 @@ export const subreddit = {
         subreddit.$el.innerHTML = "";
         e.data.data.forEach((post) => {
           post.time = moment.unix(post.created_utc).format("llll");
-          post.body = marked(post.body);
+          post.body = marked.parse(post.body);
           post.link_id = post.link_id.split("_").pop();
           subreddit.$el.innerHTML +=
             subreddit.template.profilePostCompiled(post);
@@ -178,7 +182,7 @@ export const subreddit = {
     if (created_utc !== null) {
       url += "&after=" + created_utc;
     }
-    if (subreddit.requestCount > 5) {
+    if (subreddit.requestCount > 10) {
       subreddit.requestCount = 0;
       await subreddit.sleep(10000);
     }
@@ -195,6 +199,7 @@ export const subreddit = {
           } else {
             post.postClass = "post";
           }
+          post.body = marked.parse(post.body);
           if (document.getElementById(post.parent_id)) {
             document.getElementById(post.parent_id).innerHTML +=
               subreddit.template.postCompiled(post);
