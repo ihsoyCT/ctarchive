@@ -2,6 +2,10 @@ const axios = require("axios").default;
 const moment = require("moment");
 const marked = require("marked");
 
+function base10to36(number) {
+  return parseInt(number).toString(36);
+}
+
 export const subreddit = {
   link: {
     submission:
@@ -31,6 +35,7 @@ export const subreddit = {
     document.getElementById("status").innerHTML = status;
   },
   last: null,
+  useOld: false,
   createRequest(urlParams) {
     let query = [];
     urlParams.forEach((p, k) => {
@@ -71,7 +76,7 @@ export const subreddit = {
       .then((ids) => {
         ids = ids.data.data;
         console.log("ids", ids);
-        if (ids.length !== 0 && ids.length < 2000) {
+        if (ids.length !== 0 && ids.length < 2000 && subreddit.useOld) {
           let id_splice = [];
           let requests = [];
           console.log(Math.ceil(ids.length / 500));
@@ -109,10 +114,18 @@ export const subreddit = {
                       }
 
                       post.body = marked.parse(post.body);
+                      switch (typeof post.parent_id) {
+                        case "undefined":
+                          post.parent_id = "t3_" + id;
+                          break;
+                        case "number":
+                          post.parent_id = "t1_" + base10to36(post.parent_id);
+                      }
                       if (document.getElementById(post.parent_id)) {
                         document.getElementById(post.parent_id).innerHTML +=
                           subreddit.template.postCompiled(post);
                       } else {
+                        post.postClass = "orphan";
                         document.getElementById("orphans").innerHTML +=
                           subreddit.template.postCompiled(post);
                       }
@@ -200,10 +213,18 @@ export const subreddit = {
             post.postClass = "post";
           }
           post.body = marked.parse(post.body);
+          switch (typeof post.parent_id) {
+            case "undefined":
+              post.parent_id = "t3_" + id;
+              break;
+            case "number":
+              post.parent_id = "t1_" + base10to36(post.parent_id);
+          }
           if (document.getElementById(post.parent_id)) {
             document.getElementById(post.parent_id).innerHTML +=
               subreddit.template.postCompiled(post);
           } else {
+            post.postClass = "orphan";
             document.getElementById("orphans").innerHTML +=
               subreddit.template.postCompiled(post);
           }

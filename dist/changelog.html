@@ -6,15 +6,61 @@
   <body>
     <a href="./index.html">Back</a>
     <div>
-      <h3 id="section">05/03/2022</h3>
+      <h3 class="section">08/06/2022</h3>
+      <ul>
+        <li>
+          In the prior changelog, I talked about two different ways of loading
+          comments. The old method had had several issues, due to poor
+          maintenance of the API Endpoint of pushshift. The issue that some
+          comment threads won't load at all, was fixed in the last changelog.
+          However, then another issue started showing up. To identify the
+          responses for each comment, there is a "parent_id" field returned by
+          the API for each comment. The old method of loading comments would
+          receive the wrong parent_id for each comment. Instead of it being the
+          proper base36 number, it would be the same number in base 10. This
+          resulted in me not being able to assign a reply to its parent and the
+          comments would be an "orphan". If a comment is orphaned(the parent
+          cannot be found) this site will display it at the end and it would
+          span the entire width of the site. Because of the failure of the old
+          API Endpoint that I used, there was some(many) submission where this
+          happened to every comment, making it pretty unreadable. This same
+          issue does not exist within the new method of loading comments. I
+          fixed this problem with the old method, but then realized that the old
+          method would sometimes return comments in the wrong order (e.g. a
+          child would appear before its parent) this would also result in
+          orphaned comments. This again does not occur with the new method, and
+          there would have been no easy fix for it. While ingesting the comments
+          this tool heavily relies on receiving the parents before it receives
+          the children. So I just decided to completely abandon the old method.
+          Every search will now load the comments of submission using the new
+          method.
+        </li>
+        <li>
+          Pushshift also changed how many comments/submission can be loaded at a
+          time to 100 from 1000. So the size parameter will not work for values
+          past 100.
+        </li>
+        <li>
+          Changed how orphaned comments appear. They no longer take on the full
+          width and now have a slightly darker gray background.
+        </li>
+        <li>
+          Changed the color of highlighted comments to a less obnoxious green.
+        </li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="section">05/03/2022</h3>
       <ul>
         <li>The Size option works now. Range 1-1000</li>
         <li>
-          The current way off loading comments to a submission, stopped worked
-          for newer submissions. I added an alternative way to load comments. If
-          the old way finds no comments the Backup method will automatically
-          jump in and should always be able to load the comments, if they exists
-          within pushshift.
+          The current way off loading comments to a submission, stopped working
+          for newer submissions.
+          <br />
+          I added an alternative way to load comments. If the old way finds no
+          comments the Backup method will automatically jump in <br/ > and
+          should always be able to load the comments, if they exists within
+          pushshift.
         </li>
         <li>
           This also fixed the issue of loading comments if a submission has more
