@@ -11,9 +11,9 @@ export const subreddit = {
     submission:
       "https://api.pushshift.io/reddit/search/submission?filter=author,num_comments,id,subreddit,score,created_utc,title,url,thumbnail,selftext,id",
     commentsID: "https://api.pushshift.io/reddit/submission/comment_ids/",
-    comments: "https://api.pushshift.io/reddit/search/comment/?filter=id,author,parent_id,score,body,created_utc&ids=",
+    comments: "https://api.pushshift.io/reddit/search/comment?filter=id,author,parent_id,score,body,created_utc&ids=",
     commentSearch:
-      "https://api.pushshift.io/reddit/search/comment/?filter=id,author,parent_id,score,body,created_utc,link_id,permalink",
+      "https://api.pushshift.io/reddit/search/comment?filter=id,author,parent_id,score,body,created_utc,link_id,permalink",
     commentsBackup:
       "https://api.pushshift.io/reddit/comment/search?filter=id,author,parent_id,score,body,created_utc,link_id,permalink&sort=created_utc&order=asc&limit=1000&q=*&link_id=",
   },
