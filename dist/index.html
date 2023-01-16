@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FDHPKF5WPQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-FDHPKF5WPQ");
+    </script>
     <title>Reddit Archive</title>
     <style>
       .children {
@@ -30,6 +41,17 @@
       }
 
       div#content {
+        width: 80%;
+        margin: auto;
+      }
+
+      div#highlight {
+        width: 80%;
+        margin: auto;
+        background-color: rgb(233, 230, 39);
+      }
+
+      div#comments_fix {
         width: 80%;
         margin: auto;
       }
@@ -117,6 +139,10 @@
       crossorigin="anonymous"
     ></script>
   </head>
+  <div id="highlight">
+    Upgraded this tool to the newest Pushshift API. Most features should be functional. Submission before November 2022
+    are currently not available within the API. Older comments are.
+  </div>
   <div class="error" id="error"></div>
   <div class="left">
     <a href="./index.html" id="back">Reset</a>
@@ -136,33 +162,33 @@
             <span class="label">Subreddit </span>
             <input type="text" name="subreddit" id="subreddit" />
           </label>
-          <label for="sort_type">
-            <span class="label">Sort Type</span>
-            <select name="sort_type" id="sort_type">
-              <option value="created_utc">Time</option>
-              <option value="score">Score</option>
-              <option value="num_comments">Comments</option>
-            </select>
-          </label>
           <label for="sort">
             <span class="label">Sort</span>
             <select name="sort" id="sort">
+              <option value="created_utc">Time</option>
+              <option value="score">Score</option>
+              <option value="num_comments" disabled>Comments</option>
+            </select>
+          </label>
+          <label for="order">
+            <span class="label">Order</span>
+            <select name="order" id="order">
               <option value="desc">desc</option>
               <option value="asc">asc</option>
             </select>
           </label>
           <div class="break"></div>
           <label for="size">
-            <span class="label">Size:</span>
-            <input type="text" name="size" id="size" />
+            <span class="label"> Size: </span>
+            <input type="number" min="1" max="1000" value="100" name="size" id="size" />
           </label>
-          <label for="after">
-            <span class="label">After:</span>
-            <input type="date" name="after" id="after" />
+          <label for="since">
+            <span class="label">Since:</span>
+            <input type="datetime-local" name="since" id="since" />
           </label>
-          <label for="before">
-            <span class="label">Before:</span>
-            <input type="date" name="before" id="before" />
+          <label for="until">
+            <span class="label">Until:</span>
+            <input type="datetime-local" name="until" id="until" />
           </label>
           <label for="author">
             <span class="label">Author:</span>
@@ -187,7 +213,9 @@
     </div>
   </div>
   <div id="status"></div>
+  <div id="reddit_link"></div>
   <div id="content"></div>
+  <div id="comments_fix"></div>
   <div id="orphans"></div>
   <body>
     <script src="index.js"></script>
