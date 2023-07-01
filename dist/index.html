@@ -162,33 +162,33 @@
             <span class="label">Subreddit </span>
             <input type="text" name="subreddit" id="subreddit" />
           </label>
-          <label for="sort">
-            <span class="label">Sort</span>
-            <select name="sort" id="sort">
+          <label for="sort_type">
+            <span class="label">Sort Type:</span>
+            <select name="sort_type" id="sort_type">
               <option value="created_utc">Time</option>
               <option value="score">Score</option>
-              <option value="num_comments" disabled>Comments</option>
+              <option value="num_comments">Comments</option>
             </select>
           </label>
-          <label for="order">
+          <label for="sort">
             <span class="label">Order</span>
-            <select name="order" id="order">
+            <select name="sort" id="sort">
               <option value="desc">desc</option>
               <option value="asc">asc</option>
             </select>
           </label>
           <div class="break"></div>
-          <label for="size">
-            <span class="label"> Size: </span>
-            <input type="number" min="1" max="1000" value="100" name="size" id="size" />
+          <label for="limit">
+            <span class="label"> Limit: </span>
+            <input type="number" min="1" max="1000" value="100" name="limit" id="limit" />
           </label>
-          <label for="since">
-            <span class="label">Since:</span>
-            <input type="datetime-local" name="since" id="since" />
+          <label for="after">
+            <span class="label">After:</span>
+            <input type="datetime-local" name="after" id="after" />
           </label>
-          <label for="until">
-            <span class="label">Until:</span>
-            <input type="datetime-local" name="until" id="until" />
+          <label for="before">
+            <span class="label">Before:</span>
+            <input type="datetime-local" name="before" id="before" />
           </label>
           <label for="author">
             <span class="label">Author:</span>

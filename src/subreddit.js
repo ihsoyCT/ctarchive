@@ -9,11 +9,11 @@ function base10to36(number) {
 export const subreddit = {
   link: {
     submission:
-      "https://api.pushshift.io/reddit/search/submission?filter=author,num_comments,id,subreddit,score,created_utc,title,url,thumbnail,selftext,id",
+      "https://api.pullpush.io/reddit/search/submission/?test",
     commentsID: "https://api.pushshift.io/reddit/submission/comment_ids/",
     comments: "https://api.pushshift.io/reddit/search/comment?filter=id,author,parent_id,score,body,created_utc&ids=",
     commentSearch:
-      "https://api.pushshift.io/reddit/search/comment?filter=id,author,parent_id,score,body,created_utc,link_id,permalink",
+      "https://api.pullpush.io/reddit/search/comment/?test",
     commentsBackup:
       "https://api.pushshift.io/reddit/comment/search?filter=id,author,parent_id,score,body,created_utc,link_id,permalink&sort=created_utc&order=asc&limit=1000&q=*&link_id=",
   },
@@ -37,7 +37,7 @@ export const subreddit = {
   createRequest(urlParams) {
     let query = [];
     urlParams.forEach((p, k) => {
-      if ((k === "since" || k === "until") && p !== "") {
+      if ((k === "since" || k === "until"|| k === "before" || k === "after") && p !== "") {
         p = Math.floor(new Date(p).getTime() / 1000);
       }
       if (p !== "" && k !== "mode") query.push(k + "=" + p);

@@ -7,7 +7,7 @@ window.onload = () => {
   console.log(urlParams);
   const mode = urlParams.get("mode");
 
-  if (!urlParams.has("size")) urlParams.set("size", 100);
+  if (!urlParams.has("limit")) urlParams.set("limit", 100);
 
   if (mode === "comments") {
     populateForm(urlParams);
