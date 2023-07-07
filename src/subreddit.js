@@ -15,7 +15,7 @@ export const subreddit = {
     commentSearch:
       "https://api.pullpush.io/reddit/search/comment/?test",
     commentsBackup:
-      "https://api.pushshift.io/reddit/comment/search?filter=id,author,parent_id,score,body,created_utc,link_id,permalink&sort=created_utc&order=asc&limit=1000&q=*&link_id=",
+      "https://api.pullpush.io/reddit/comment/search?sort=asc&limit=1000&link_id=",
   },
   template: {
     submissionCompiled: require("./templates/submission.pug"),
@@ -114,12 +114,13 @@ export const subreddit = {
   },
   async loadCommentsBackup(id, highlight, created_utc = null) {
     subreddit.changeStatus("Loading Comments (Backup)");
-    let url = subreddit.link.commentsBackup + parseInt(id, 36);
+    let url = subreddit.link.commentsBackup + id;
     if (created_utc !== null) {
-      url += "&since=" + (created_utc + 1);
+      url += "&after=" + (created_utc + 1);
     }
     if (subreddit.requestCount > 10) {
       subreddit.requestCount = 0;
+      console.log("Waiting");
       await subreddit.sleep(10000);
     }
     axios
@@ -154,7 +155,7 @@ export const subreddit = {
           last = post;
         });
         console.log("LAST", last);
-        if (last !== null) {
+        if (last !== null && last.created_utc != created_utc) {
           subreddit.loadCommentsBackup(id, highlight, last.created_utc);
         } else {
           subreddit.changeStatus("Comments Loaded");

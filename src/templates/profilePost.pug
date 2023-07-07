@@ -6,5 +6,5 @@ div(class='post')
         a(href='index.html?mode=comments&author=' + author) Comments 
         | - Score: #{score} at #{time}
     p !{body}
-    //-div(class='post_navigation')
-        //-a(href='index.html?comments=' + link_id + '&id=' + id) Context
+    div(class='post_navigation')
+        a(href='index.html?comments=' + link_id + '&id=' + id) Context

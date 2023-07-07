@@ -12,8 +12,8 @@ div(class='submissionclass')
             h3 #{title}
         div
             a(href=url) #{url}
-        //-div(class='commentlink')
-            //-a(href='index.html?comments=' + id) #{num_comments} Comments
+        div(class='commentlink')
+            a(href='index.html?comments=' + id) #{num_comments} Comments
 
         div(class='post') !{selftext}
     div(class='thumbnail')
