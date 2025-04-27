@@ -140,7 +140,8 @@
     ></script>
   </head>
   <div id="highlight">
-    Migration to PushPull completed. All features should be available.
+    28/04/2025: PushPull is currently not functioning due to server upgrades. When it will be back is currently unknown. <br />
+    I added an alternative backend called Arctic Shift, this should have similar features. The main disadvantage is, that you cannot do a fulltext search without setting either subreddit or author
   </div>
   <div class="error" id="error"></div>
   <div class="left">
@@ -150,6 +151,13 @@
     <div id="searchform">
       <form id="search_form">
         <div class="searchFlex">
+          <label for="backend">
+            <span class="label">Backend</span>
+            <select id="backend" name="backend">
+              <option value="artic_shift">Arctic Shift</option>
+              <option value="pushpull">PushPull</option>
+            </select>
+          </label>
           <label for="mode">
             <span class="label">Comments/Submissions</span>
             <select id="mode" name="mode">

@@ -2,11 +2,19 @@ const axios = require("axios").default;
 const moment = require("moment");
 const marked = require("marked");
 
+import { artic_shift } from "./artic_shift";
+
 function base10to36(number) {
   return parseInt(number).toString(36);
 }
 
+export const Backends = Object.freeze({
+  PUSHPULL: 0,
+  ARTIC_SHIFT: 1
+})
+
 export const subreddit = {
+  backend: Backends.ARTIC_SHIFT,
   link: {
     submission:
       "https://api.pullpush.io/reddit/search/submission/?test",
@@ -37,7 +45,7 @@ export const subreddit = {
   createRequest(urlParams) {
     let query = [];
     urlParams.forEach((p, k) => {
-      if ((k === "since" || k === "until"|| k === "before" || k === "after") && p !== "") {
+      if ((k === "since" || k === "until" || k === "before" || k === "after") && p !== "") {
         p = Math.floor(new Date(p).getTime() / 1000);
       }
       if (p !== "" && k !== "mode") query.push(k + "=" + p);
@@ -46,71 +54,92 @@ export const subreddit = {
     return query.join("&");
   },
   grabSubmissions(urlParams) {
-    const request = subreddit.createRequest(urlParams);
-    subreddit.changeStatus("Loading Submissions");
-    axios
-      .get(subreddit.link.submission + "&" + request)
-      .then((e) => {
-        subreddit.$el.innerHTML = "";
-        e.data.data
-          .forEach((sub) => {
-            sub.time = moment.unix(sub.created_utc).format("llll");
-            const imagetypes = ["jpg", "png", "gif"];
-            if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
-            subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
-            subreddit.last = sub;
+    switch (subreddit.backend) {
+      case Backends.PUSHPULL:
+        const request = subreddit.createRequest(urlParams);
+        subreddit.changeStatus("Loading Submissions");
+        axios
+          .get(subreddit.link.submission + "&" + request)
+          .then((e) => {
+            subreddit.$el.innerHTML = "";
+            e.data.data
+              .forEach((sub) => {
+                sub.time = moment.unix(sub.created_utc).format("llll");
+                const imagetypes = ["jpg", "png", "gif"];
+                if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
+                subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
+                subreddit.last = sub;
+              })
+              .then(() => {
+                subreddit.changeStatus("Submissions Loaded");
+              });
           })
-          .then(() => {
-            subreddit.changeStatus("Submissions Loaded");
+          .catch((e) => {
+            console.log(e);
+            subreddit.changeStatus("Error Loading Submissions");
           });
-      })
-      .catch((e) => {
-        console.log(e);
-        subreddit.changeStatus("Error Loading Submissions");
-      });
+        break;
+      case Backends.ARTIC_SHIFT:
+        artic_shift.get_submissions(urlParams, subreddit);
+        break;
+    }
   },
   grabComments(id, highlight) {
-    subreddit.changeStatus("Loading Comments");
-    console.log(id);
-    console.log("backup");
-    subreddit.changeStatus("Loading Comments (Backup)");
-    subreddit.set_reddit_link(id);
-    subreddit.$el.innerHTML = "";
-    axios
-      .get(subreddit.link.submission + "&ids=" + id)
-      .then((s) => {
-        console.log(s);
-        s.data.data[0].time = moment.unix(s.data.data[0].created_utc).format("llll");
-        s.data.data[0].selftext = marked.parse(s.data.data[0].selftext);
-        subreddit.$el.innerHTML = subreddit.template.submissionCompiled(s.data.data[0]);
-      })
-      .then(() => {
-        subreddit.changeStatus("Submission Loaded");
-      });
+    switch (subreddit.backend) {
+      case Backends.PUSHPULL:
+        subreddit.changeStatus("Loading Comments");
+        console.log(id);
+        console.log("backup");
+        subreddit.changeStatus("Loading Comments (Backup)");
+        subreddit.set_reddit_link(id);
+        subreddit.$el.innerHTML = "";
+        axios
+          .get(subreddit.link.submission + "&ids=" + id)
+          .then((s) => {
+            console.log(s);
+            s.data.data[0].time = moment.unix(s.data.data[0].created_utc).format("llll");
+            s.data.data[0].selftext = marked.parse(s.data.data[0].selftext);
+            subreddit.$el.innerHTML = subreddit.template.submissionCompiled(s.data.data[0]);
+          })
+          .then(() => {
+            subreddit.changeStatus("Submission Loaded");
+          });
 
-    subreddit.loadCommentsBackup(id, highlight).then(() => {
-      subreddit.changeStatus("Comments Loaded");
-    });
+        subreddit.loadCommentsBackup(id, highlight).then(() => {
+          subreddit.changeStatus("Comments Loaded");
+        });
+        break;
+      case Backends.ARTIC_SHIFT:
+        artic_shift.grab_comments(id, highlight, subreddit)
+        break;
+    }
   },
   sleep(ms) {
     subreddit.changeStatus("Waiting for:" + ms + "ms");
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
   searchComments(urlParams) {
-    const request = subreddit.createRequest(urlParams);
-    axios
-      .get(subreddit.link.commentSearch + "&" + request)
-      .then((e) => {
-        subreddit.$el.innerHTML = "";
-        e.data.data.forEach((post) => {
-          post.time = moment.unix(post.created_utc).format("llll");
-          post.body = marked.parse(post.body);
-          post.link_id = post.link_id.split("_").pop();
-          subreddit.$el.innerHTML += subreddit.template.profilePostCompiled(post);
-          subreddit.last = post;
-        });
-      })
-      .catch(subreddit.error);
+    switch (this.backend) {
+      case Backends.PUSHPULL:
+        const request = subreddit.createRequest(urlParams);
+        axios
+          .get(subreddit.link.commentSearch + "&" + request)
+          .then((e) => {
+            subreddit.$el.innerHTML = "";
+            e.data.data.forEach((post) => {
+              post.time = moment.unix(post.created_utc).format("llll");
+              post.body = marked.parse(post.body);
+              post.link_id = post.link_id.split("_").pop();
+              subreddit.$el.innerHTML += subreddit.template.profilePostCompiled(post);
+              subreddit.last = post;
+            });
+          })
+          .catch(subreddit.error);  
+      break
+      case Backends.ARTIC_SHIFT:
+        artic_shift.search_comments(urlParams, subreddit)
+        break
+    }
   },
   async loadCommentsBackup(id, highlight, created_utc = null) {
     subreddit.changeStatus("Loading Comments (Backup)");
