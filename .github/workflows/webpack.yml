@@ -34,8 +34,11 @@ jobs:
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git clone https://x-access-token:${GITHUB_TOKEN}@github.com/ihsoyCT/ihsoyCT.github.io.git out
         ls -lisa
-        cp -r dist/* out/
+        cp -rv dist/* out/
         cd out
+        touch test123
+        git status
         git add .
+        git status
         git commit -m "Deploy to GitHub Pages"
         git push origin test-deploy
