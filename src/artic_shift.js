@@ -33,8 +33,9 @@ export const artic_shift = {
                 subreddit.$el.innerHTML = "";
                 e.data.data
                     .forEach((sub) => {
+                        console.log(sub)
                         sub.time = moment.unix(sub.created_utc).format("llll");
-                        const imagetypes = ["jpg", "png", "gif"];
+                        const imagetypes = ["jpg", "png", "gif", "jpeg"];
                         if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
                         subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
                         subreddit.last = sub;
