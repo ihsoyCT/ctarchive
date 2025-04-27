@@ -36,6 +36,7 @@ jobs:
         ls -lisa
         cp -rv dist/* out/
         cd out
+        git switch test-deploy
         touch test123
         git status
         git add .
