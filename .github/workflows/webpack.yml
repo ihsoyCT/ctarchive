@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [22.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -23,7 +23,17 @@ jobs:
     - name: Build
       run: |
         npm install
-        npm run build:prod
-  
+        npx run build:prod
 
-  
+    - name: Deploy to GitHub Pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git clone https://x-access-token:${GITHUB_TOKEN}@github.com/ihsoyCT/ihsoyCT.github.io.git out
+        cp -r dist/* out/
+        cd out
+        git add .
+        git commit -m "Deploy to GitHub Pages"
+        git push origin test-deploy
