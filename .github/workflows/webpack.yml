@@ -2,7 +2,7 @@ name: NodeJS with Webpack
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -36,10 +36,9 @@ jobs:
         ls -lisa
         cp -rv dist/* out/
         cd out
-        git switch test-deploy
-        touch test123
+        git switch master
         git status
         git add .
         git status
         git commit -m "Deploy to GitHub Pages"
-        git push origin test-deploy
+        git push origin master
