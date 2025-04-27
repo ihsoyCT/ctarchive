@@ -23,7 +23,7 @@ jobs:
     - name: Build
       run: |
         npm install
-        npx run build:prod
+        npm run build:prod
   
 
   
