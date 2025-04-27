@@ -27,12 +27,12 @@ jobs:
 
     - name: Deploy to GitHub Pages
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PAT: ${{ secrets.PAT }}
       run: |
         set -x
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git clone https://x-access-token:${GITHUB_TOKEN}@github.com/ihsoyCT/ihsoyCT.github.io.git out
+        git clone https://x-access-token:${PAT}@github.com/ihsoyCT/ihsoyCT.github.io.git out
         ls -lisa
         cp -rv dist/* out/
         cd out
