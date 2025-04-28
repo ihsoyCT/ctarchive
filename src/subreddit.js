@@ -5,15 +5,20 @@ const marked = require("marked");
 import { artic_shift } from "./artic_shift";
 import { pushpull } from "./pushpull";
 
-function base10to36(number) {
-  return parseInt(number).toString(36);
-}
-
+/**
+ * Enum for supported backends.
+ * @readonly
+ * @enum {number}
+ */
 export const Backends = Object.freeze({
   PUSHPULL: 0,
   ARTIC_SHIFT: 1
-})
+});
 
+/**
+ * Main subreddit logic and backend dispatcher.
+ * @namespace subreddit
+ */
 export const subreddit = {
   backend: Backends.ARTIC_SHIFT,
   link: {
@@ -38,11 +43,20 @@ export const subreddit = {
     return a;
   })(),
   requestCount: 0,
+  /**
+   * Change status (for legacy compatibility).
+   * @param {string} status
+   */
   changeStatus(status) {
-    console.log(status);
+    // No-op or could be improved for future use
   },
   last: null,
   useOld: false,
+  /**
+   * Create a query string from URLSearchParams, converting date fields to epoch.
+   * @param {URLSearchParams} urlParams
+   * @returns {string}
+   */
   createRequest(urlParams) {
     let query = [];
     urlParams.forEach((p, k) => {
@@ -51,9 +65,12 @@ export const subreddit = {
       }
       if (p !== "" && k !== "mode") query.push(k + "=" + p);
     });
-    console.log("AAAA", query);
     return query.join("&");
   },
+  /**
+   * Dispatch submission search to the correct backend.
+   * @param {URLSearchParams} urlParams
+   */
   grabSubmissions(urlParams) {
     switch (subreddit.backend) {
       case Backends.PUSHPULL:
@@ -64,6 +81,11 @@ export const subreddit = {
         break;
     }
   },
+  /**
+   * Dispatch comment grab to the correct backend.
+   * @param {string} id
+   * @param {string} highlight
+   */
   grabComments(id, highlight) {
     switch (subreddit.backend) {
       case Backends.PUSHPULL:
@@ -74,10 +96,19 @@ export const subreddit = {
         break;
     }
   },
+  /**
+   * Sleep utility (async).
+   * @param {number} ms
+   * @returns {Promise<void>}
+   */
   sleep(ms) {
-    subreddit.changeStatus("Waiting for:" + ms + "ms");
+    subreddit.changeStatus(`Waiting for: ${ms}ms`);
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
+  /**
+   * Dispatch comment search to the correct backend.
+   * @param {URLSearchParams} urlParams
+   */
   searchComments(urlParams) {
     switch (this.backend) {
       case Backends.PUSHPULL:
@@ -88,18 +119,30 @@ export const subreddit = {
         break;
     }
   },
+  /**
+   * Set the Reddit link for a submission.
+   * @param {string|null} id
+   */
   set_reddit_link(id) {
+    const redditLinkDiv = document.getElementById("reddit_link");
+    if (!redditLinkDiv) return;
     if (id != null) {
-      document.getElementById("reddit_link").innerHTML =
-        "<a href='https://reddit.com/" + id + "'>Submission on reddit</a>";
+      redditLinkDiv.innerHTML =
+        `<a href='https://reddit.com/${id}'>Submission on reddit</a>`;
     } else {
-      document.getElementById("reddit_link").innerHTML = "";
+      redditLinkDiv.innerHTML = "";
     }
   },
 };
 
+/**
+ * Update the status log UI with a message and type.
+ * @param {string} message
+ * @param {"info"|"loading"|"success"|"error"} [type="info"]
+ */
 function updateStatusLog(message, type = "info") {
   const errorDiv = document.getElementById("error");
+  if (!errorDiv) return;
   // Remove previous spinner if present
   if (type === "success" || type === "error") {
     const spinners = errorDiv.querySelectorAll('.status-icon.spinner');
@@ -120,6 +163,7 @@ function updateStatusLog(message, type = "info") {
 
 export { updateStatusLog };
 
+// Add spinner keyframes if not present
 if (!document.getElementById('status-spinner-style')) {
   const style = document.createElement('style');
   style.id = 'status-spinner-style';

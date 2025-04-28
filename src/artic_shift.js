@@ -60,6 +60,10 @@ function addPaginationLinks({ data, urlParams, container }) {
     container.appendChild(prevLink);
 }
 
+/**
+ * Arctic Shift backend logic for Reddit archive search.
+ * @namespace artic_shift
+ */
 export const artic_shift = {
     base_url: "https://arctic-shift.photon-reddit.com",
     submission_end_point: `/api/posts/search`,
@@ -67,26 +71,31 @@ export const artic_shift = {
     comments_tree_end_point: `/api/comments/tree`,
     comments_search: '/api/comments/search',
 
+    /**
+     * Fetch submissions from Arctic Shift API and render them.
+     * @param {URLSearchParams} urlParams
+     * @param {object} subreddit
+     */
     get_submissions(urlParams, subreddit) {
-        let query = []
-        add_to_url(query, "sort", urlParams.get("sort"))
-        add_to_url(query, "after", urlParams.get("after"))
-        add_to_url(query, "before", urlParams.get("before"))
-        add_to_url(query, "author", urlParams.get("author"))
-        add_to_url(query, "subreddit", urlParams.get("subreddit"))
-        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"))
-        add_to_url(query, "limit", urlParams.get("limit"))
-        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"))
-        add_to_url(query, "over_18", urlParams.get("over_18"))
-        add_to_url(query, "spoiler", urlParams.get("spoiler"))
-        add_to_url(query, "title", urlParams.get("title"))
+        let query = [];
+        add_to_url(query, "sort", urlParams.get("sort"));
+        add_to_url(query, "after", urlParams.get("after"));
+        add_to_url(query, "before", urlParams.get("before"));
+        add_to_url(query, "author", urlParams.get("author"));
+        add_to_url(query, "subreddit", urlParams.get("subreddit"));
+        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
+        add_to_url(query, "limit", urlParams.get("limit"));
+        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
+        add_to_url(query, "over_18", urlParams.get("over_18"));
+        add_to_url(query, "spoiler", urlParams.get("spoiler"));
+        add_to_url(query, "title", urlParams.get("title"));
         // Backwards compatibility: if 'q' is present, use it as 'selftext'
         let selftextValue = urlParams.get("q") || urlParams.get("selftext");
         add_to_url(query, "selftext", selftextValue);
-        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"))
-        add_to_url(query, "query", urlParams.get("query"))
-        add_to_url(query, "url", urlParams.get("url"))
-        add_to_url(query, "url_exact", urlParams.get("url_exact"))
+        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"));
+        add_to_url(query, "query", urlParams.get("query"));
+        add_to_url(query, "url", urlParams.get("url"));
+        add_to_url(query, "url_exact", urlParams.get("url_exact"));
 
         // Only request fields actually used in the templates
         const filterFields = [
@@ -94,58 +103,56 @@ export const artic_shift = {
         ];
         add_to_url(query, "filter", filterFields.join(","));
 
-        const url = `${this.base_url}${this.submission_end_point}?${query.join('&')}`
+        const url = `${this.base_url}${this.submission_end_point}?${query.join('&')}`;
         updateStatusLog(`Grabbing Submissions from Arctic_shift with params: ${urlParams.toString()}`, "loading");
         axios
             .get(url)
             .then((e) => {
                 subreddit.$el.innerHTML = "";
-                let lastCreatedUtc = null;
-                e.data.data
-                    .forEach((sub) => {
-                        console.log(sub)
-                        sub.time = moment.unix(sub.created_utc).format("llll");
-                        const imagetypes = ["jpg", "png", "gif", "jpeg"];
-                        if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
-                        subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
-                        subreddit.last = sub;
-                        lastCreatedUtc = sub.created_utc;
-                    })
+                const frag = document.createDocumentFragment();
+                e.data.data.forEach((sub) => {
+                    sub.time = moment.unix(sub.created_utc).format("llll");
+                    const imagetypes = ["jpg", "png", "gif", "jpeg"];
+                    if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
+                    frag.appendChild(tempDiv.firstElementChild);
+                    subreddit.last = sub;
+                });
+                subreddit.$el.appendChild(frag);
                 updateStatusLog(`Done grabbing submissions from Arctic_shift`, "success");
                 addPaginationLinks({ data: e.data.data, urlParams, container: subreddit.$el });
             })
             .catch((error) => {
                 let errorMsg = error?.response?.data?.error || error.message;
                 updateStatusLog(`Error grabbing submissions from Arctic_shift: ${errorMsg}`, "error");
-                if (error.response) {
-                    console.log(error.response.data);
-                    console.log(error.response.status);
-                    console.log(error.response.headers);
-                } else {
-                    console.log(error)
-                }
             });
     },
+    /**
+     * Search comments from Arctic Shift API and render them.
+     * @param {URLSearchParams} urlParams
+     * @param {object} subreddit
+     */
     search_comments(urlParams, subreddit) {
-        let query = []
-        add_to_url(query, "sort", urlParams.get("sort"))
-        add_to_url(query, "after", urlParams.get("after"))
-        add_to_url(query, "before", urlParams.get("before"))
-        add_to_url(query, "author", urlParams.get("author"))
-        add_to_url(query, "subreddit", urlParams.get("subreddit"))
-        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"))
-        add_to_url(query, "limit", urlParams.get("limit"))
-        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"))
-        add_to_url(query, "over_18", urlParams.get("over_18"))
-        add_to_url(query, "spoiler", urlParams.get("spoiler"))
-        add_to_url(query, "title", urlParams.get("title"))
+        let query = [];
+        add_to_url(query, "sort", urlParams.get("sort"));
+        add_to_url(query, "after", urlParams.get("after"));
+        add_to_url(query, "before", urlParams.get("before"));
+        add_to_url(query, "author", urlParams.get("author"));
+        add_to_url(query, "subreddit", urlParams.get("subreddit"));
+        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
+        add_to_url(query, "limit", urlParams.get("limit"));
+        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
+        add_to_url(query, "over_18", urlParams.get("over_18"));
+        add_to_url(query, "spoiler", urlParams.get("spoiler"));
+        add_to_url(query, "title", urlParams.get("title"));
         // Backwards compatibility: if 'q' is present, use it as 'selftext'
         let selftextValue = urlParams.get("q") || urlParams.get("selftext");
         add_to_url(query, "selftext", selftextValue);
-        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"))
-        add_to_url(query, "query", urlParams.get("query"))
-        add_to_url(query, "url", urlParams.get("url"))
-        add_to_url(query, "url_exact", urlParams.get("url_exact"))
+        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"));
+        add_to_url(query, "query", urlParams.get("query"));
+        add_to_url(query, "url", urlParams.get("url"));
+        add_to_url(query, "url_exact", urlParams.get("url_exact"));
 
         // Only request fields actually used in the templates
         const filterFields = [
@@ -153,38 +160,39 @@ export const artic_shift = {
         ];
         add_to_url(query, "filter", filterFields.join(","));
 
-        const url = `${this.base_url}${this.comments_search}?${query.join('&')}`
+        const url = `${this.base_url}${this.comments_search}?${query.join('&')}`;
         updateStatusLog(`Searching comments from Arctic_shift with params: ${urlParams.toString()}`, "loading");
         axios.get(url).then(response => {
             subreddit.$el.innerHTML = "";
+            const frag = document.createDocumentFragment();
             response.data.data.forEach((post) => {
                 post.time = moment.unix(post.created_utc).format("llll");
                 post.body = marked.parse(post.body);
                 post.link_id = post.link_id.split("_").pop();
-                subreddit.$el.innerHTML += subreddit.template.profilePostCompiled(post);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
+                frag.appendChild(tempDiv.firstElementChild);
                 subreddit.last = post;
             });
+            subreddit.$el.appendChild(frag);
             updateStatusLog(`Done searching comments from Arctic_shift`, "success");
             addPaginationLinks({ data: response.data.data, urlParams, container: subreddit.$el });
         })
             .catch((error) => {
                 let errorMsg = error?.response?.data?.error || error.message;
                 updateStatusLog(`Error searching comments from Arctic_shift: ${errorMsg}`, "error");
-                if (error.response) {
-                    console.log(error.response.data);
-                    console.log(error.response.status);
-                    console.log(error.response.headers);
-                } else {
-                    console.log(error)
-                }
             });
     },
+    /**
+     * Fetch a submission and its comment tree by ID from Arctic Shift API.
+     * @param {string} id
+     * @param {string} highlight
+     * @param {object} subreddit
+     */
     grab_comments(id, highlight, subreddit) {
-        console.log(id);
-        const submission_url = `${this.base_url}${this.singular_submission}?ids=${id}`
+        const submission_url = `${this.base_url}${this.singular_submission}?ids=${id}`;
         updateStatusLog(`Grabbing Submission by ID from Arctic_shift: ${id}`, "loading");
         axios.get(submission_url).then((e) => {
-            console.log(e)
             e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
             e.data.data[0].selftext = marked.parse(e.data.data[0].selftext);
             subreddit.$el.innerHTML = subreddit.template.submissionCompiled(e.data.data[0]);
@@ -194,16 +202,16 @@ export const artic_shift = {
             updateStatusLog(`Error grabbing submission by ID from Arctic_shift: ${errorMsg}`, "error");
         });
 
-        const comment_tree = `${this.base_url}${this.comments_tree_end_point}?link_id=${id}&limit=9999`
+        const comment_tree = `${this.base_url}${this.comments_tree_end_point}?link_id=${id}&limit=9999`;
         updateStatusLog(`Grabbing comment tree from Arctic_shift for submission ID: ${id}`, "loading");
         axios.get(comment_tree).then(e => {
-            console.log(e)
-
             e.data.data.forEach(comment => {
-                this.handle_comment(comment, subreddit, `t3_${id}`, highlight)
-            })
-
-            if (highlight !== null) document.getElementById(highlight).scrollIntoView();
+                this.handle_comment(comment, subreddit, `t3_${id}`, highlight);
+            });
+            if (highlight !== null) {
+                const el = document.getElementById(highlight);
+                if (el) el.scrollIntoView();
+            }
             updateStatusLog(`Done grabbing comment tree from Arctic_shift for submission ID: ${id}`, "success");
         }).catch((error) => {
             let errorMsg = error?.response?.data?.error || error.message;
@@ -211,11 +219,16 @@ export const artic_shift = {
         });
     },
     comments_count: 0,
+    /**
+     * Handle and render a comment tree node (recursive, uses DocumentFragment for performance).
+     * @param {object} comment
+     * @param {object} subreddit
+     * @param {string} parent
+     * @param {string} highlight
+     */
     handle_comment(comment, subreddit, parent, highlight) {
-        // Initialize a queue with the initial comment
         let queue = [comment];
         const childrenMap = {};
-
         while (queue.length > 0) {
             this.comments_count++;
             let currentComment = queue.shift();
@@ -228,22 +241,16 @@ export const artic_shift = {
                 "body": data.body,
                 "postClass": data.id === highlight ? "post_highlight" : "post"
             };
-
             if (!childrenMap[data.parent_id]) childrenMap[data.parent_id] = [];
-            // Compile HTML and parse to node
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = subreddit.template.postCompiled(tpl_data);
             if (tempDiv.firstElementChild) {
                 childrenMap[data.parent_id].push(tempDiv.firstElementChild);
             }
-
             if (data.replies?.data?.children?.length > 0) {
                 data.replies.data.children.forEach(reply => queue.push(reply));
             }
         }
-
-        console.log(`Total comments: ${this.comments_count}`);
-
         // Batch update DOM using DocumentFragment
         Object.entries(childrenMap).forEach(([parentId, nodes]) => {
             const parentEl = document.getElementById(parentId);

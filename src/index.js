@@ -2,13 +2,16 @@ import { subreddit, Backends } from "./subreddit";
 import pushpullSearchTemplate from "./templates/pushpull_search.pug";
 import arcticShiftSearchTemplate from "./templates/arctic_shift_search.pug";
 
+/**
+ * Render the search form for the selected backend.
+ * @param {string} backend
+ */
 function renderSearchForm(backend) {
   const searchformDiv = document.getElementById("searchform");
   if (backend === "pushpull") {
     searchformDiv.innerHTML = pushpullSearchTemplate();
   } else if (backend === "artic_shift") {
     searchformDiv.innerHTML = arcticShiftSearchTemplate();
-    // Call disabling logic immediately after rendering
     setTimeout(() => {
       if (window.onArcticShiftFormChanged) window.onArcticShiftFormChanged();
     }, 0);
@@ -17,8 +20,11 @@ function renderSearchForm(backend) {
   }
 }
 
+/**
+ * Paginate Arctic Shift results by re-running the search with updated params.
+ * @param {URLSearchParams} urlParams
+ */
 function arcticShiftPaginate(urlParams) {
-  // Re-run the search with updated urlParams
   const { artic_shift } = require('./artic_shift');
   artic_shift.get_submissions(urlParams, subreddit, arcticShiftPaginate);
 }
@@ -26,45 +32,25 @@ function arcticShiftPaginate(urlParams) {
 window.onload = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-
-
-  let backend = urlParams.get("backend");
-  if (!backend) {
-    backend = "artic_shift";
-  }
-
-  console.log("Backend: " + backend);
+  let backend = urlParams.get("backend") || "artic_shift";
   renderSearchForm(backend);
-
   const backendSelector = document.getElementById("backend");
-  console.log(backendSelector);
-  backendSelector.addEventListener("change", (e) => {
-    console.log("Backend changed to: " + e.target.value);
-    renderSearchForm(e.target.value);
-  });
-
-  console.log(urlParams);
-  const mode = urlParams.get("mode");
-  // set the input value of the backend input to the backend value
-  if (backend) {
+  if (backendSelector) {
     backendSelector.value = backend;
+    backendSelector.addEventListener("change", (e) => {
+      renderSearchForm(e.target.value);
+    });
   }
   urlParams.delete("backend");
-
-
-  if (backend == "pushpull") {
-    subreddit.backend = Backends.PUSHPULL
-  } else if (backend == "artic_shift") {
-    subreddit.backend = Backends.ARTIC_SHIFT
-    // Initial search with pagination support
+  const mode = urlParams.get("mode");
+  if (backend === "pushpull") {
+    subreddit.backend = Backends.PUSHPULL;
+  } else if (backend === "artic_shift") {
+    subreddit.backend = Backends.ARTIC_SHIFT;
     arcticShiftPaginate(urlParams);
     return;
-  } else {
-    console.log("Invalid Backend")
   }
-
   if (!urlParams.has("limit")) urlParams.set("limit", 100);
-
   if (mode === "comments") {
     populateForm(urlParams);
     urlParams.delete("mode");
@@ -76,30 +62,30 @@ window.onload = () => {
     urlParams.delete("mode");
     subreddit.grabSubmissions(urlParams);
   }
-
   document.getElementById("content").appendChild(subreddit.$el);
 };
 
+/**
+ * Populate form fields from URLSearchParams.
+ * @param {URLSearchParams} urlParams
+ */
 function populateForm(urlParams) {
   urlParams.forEach((p, k) => {
-    console.log(k + " => " + p);
     const el = document.getElementById(k);
-    if (el) el.value = p;
+    if (el && typeof el.value !== 'undefined') el.value = p;
   });
 }
 
 window.switchBackend = function (newBackend) {
-  if(newBackend === "arctic_shift") {
-    window.onArcticShiftFormChanged()
+  if (newBackend === "arctic_shift" && window.onArcticShiftFormChanged) {
+    window.onArcticShiftFormChanged();
   }
   renderSearchForm(newBackend);
   const backendSelector = document.getElementById("backend");
   if (backendSelector) backendSelector.value = newBackend;
-  // Optionally, update state or trigger other logic here
 };
 
 function updateArcticShiftFieldState() {
-  console.log('[DEBUG] updateArcticShiftFieldState called');
   const author = document.getElementById('author');
   const subreddit = document.getElementById('subreddit');
   const disable = (!author || !subreddit || (!author.value && !subreddit.value));
@@ -117,15 +103,11 @@ function updateArcticShiftFieldState() {
         el.removeAttribute('title');
         el.placeholder = '';
       }
-      console.log('[DEBUG] field', id, 'set disabled:', disable);
-    } else {
-      console.log('[DEBUG] field', id, 'not found');
     }
   });
 }
 
 function setupArcticShiftFieldState() {
-  console.log('[DEBUG] setupArcticShiftFieldState called');
   const author = document.getElementById('author');
   const subreddit = document.getElementById('subreddit');
   if (author) author.addEventListener('input', updateArcticShiftFieldState);
@@ -134,6 +116,5 @@ function setupArcticShiftFieldState() {
 }
 
 window.onArcticShiftFormChanged = () => {
-  console.log('[DEBUG] onArcticShiftFormChanged called');
   setupArcticShiftFieldState();
 }

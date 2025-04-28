@@ -3,12 +3,21 @@ const axios = require("axios").default;
 const moment = require("moment");
 const marked = require("marked");
 
+/**
+ * PushPull backend logic for Reddit archive search.
+ * @namespace pushpull
+ */
 const pushpull = {
   link: {
     submission: "https://api.pullpush.io/reddit/search/submission/?test",
     commentSearch: "https://api.pullpush.io/reddit/search/comment/?test",
   },
 
+  /**
+   * Fetch submissions from PushPull API and render them.
+   * @param {URLSearchParams} urlParams
+   * @param {object} subreddit
+   */
   get_submissions(urlParams, subreddit) {
     const request = subreddit.createRequest(urlParams);
     const url = this.link.submission + "&" + request;
@@ -17,21 +26,30 @@ const pushpull = {
       .get(url)
       .then((e) => {
         subreddit.$el.innerHTML = "";
+        const frag = document.createDocumentFragment();
         e.data.data.forEach((sub) => {
           sub.time = moment.unix(sub.created_utc).format("llll");
           const imagetypes = ["jpg", "png", "gif"];
           if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
-          subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
+          frag.appendChild(tempDiv.firstElementChild);
           subreddit.last = sub;
         });
+        subreddit.$el.appendChild(frag);
         updateStatusLog(`Done grabbing submissions from PushPull`, "success");
       })
       .catch((e) => {
         updateStatusLog(`Error grabbing submissions from PushPull: ${e.message}`, "error");
-        console.log(e);
       });
   },
 
+  /**
+   * Fetch a submission and its comments by ID from PushPull API.
+   * @param {string} id
+   * @param {string} highlight
+   * @param {object} subreddit
+   */
   grab_comments(id, highlight, subreddit) {
     subreddit.changeStatus("Loading Comments");
     subreddit.set_reddit_link(id);
@@ -58,6 +76,11 @@ const pushpull = {
     });
   },
 
+  /**
+   * Search comments from PushPull API and render them.
+   * @param {URLSearchParams} urlParams
+   * @param {object} subreddit
+   */
   search_comments(urlParams, subreddit) {
     const request = subreddit.createRequest(urlParams);
     const url = this.link.commentSearch + "&" + request;
@@ -66,13 +89,17 @@ const pushpull = {
       .get(url)
       .then((e) => {
         subreddit.$el.innerHTML = "";
+        const frag = document.createDocumentFragment();
         e.data.data.forEach((post) => {
           post.time = moment.unix(post.created_utc).format("llll");
           post.body = marked.parse(post.body);
           post.link_id = post.link_id.split("_").pop();
-          subreddit.$el.innerHTML += subreddit.template.profilePostCompiled(post);
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
+          frag.appendChild(tempDiv.firstElementChild);
           subreddit.last = post;
         });
+        subreddit.$el.appendChild(frag);
         updateStatusLog(`Done searching comments from PushPull`, "success");
       })
       .catch((e) => {
@@ -81,28 +108,36 @@ const pushpull = {
       });
   },
 
-  loadCommentsBackup(id, highlight, subreddit) {
+  /**
+   * Load comments backup from PushPull API and render them.
+   * @param {string} id
+   * @param {string} highlight
+   * @param {object} subreddit
+   * @returns {Promise<void>}
+   */
+  async loadCommentsBackup(id, highlight, subreddit) {
     const url = this.link.commentSearch + "&ids=" + id;
     updateStatusLog(`Grabbing comments backup from PushPull for ID: ${id}`, "loading");
-    return axios
-      .get(url)
-      .then((response) => {
-        const comments = response.data.data;
-        comments.forEach((comment) => {
-          comment.time = moment.unix(comment.created_utc).format("llll");
-          comment.body = marked.parse(comment.body);
-          subreddit.$el.innerHTML += subreddit.template.commentCompiled(comment);
-        });
-        if (highlight) {
-          const highlighted = document.getElementById(highlight);
-          if (highlighted) highlighted.scrollIntoView();
-        }
-        updateStatusLog(`Done grabbing comments backup from PushPull for ID: ${id}`, "success");
-      })
-      .catch((error) => {
-        updateStatusLog(`Error grabbing comments backup from PushPull for ID: ${id}: ${error.message}`, "error");
-        console.error("Error loading comments backup:", error);
+    try {
+      const response = await axios.get(url);
+      const comments = response.data.data;
+      const frag = document.createDocumentFragment();
+      comments.forEach((comment) => {
+        comment.time = moment.unix(comment.created_utc).format("llll");
+        comment.body = marked.parse(comment.body);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = subreddit.template.commentCompiled(comment);
+        frag.appendChild(tempDiv.firstElementChild);
       });
+      subreddit.$el.appendChild(frag);
+      if (highlight) {
+        const highlighted = document.getElementById(highlight);
+        if (highlighted) highlighted.scrollIntoView();
+      }
+      updateStatusLog(`Done grabbing comments backup from PushPull for ID: ${id}`, "success");
+    } catch (error) {
+      updateStatusLog(`Error grabbing comments backup from PushPull for ID: ${id}: ${error.message}`, "error");
+    }
   },
 };
 
