@@ -56,6 +56,25 @@ window.onload = () => {
     subreddit.grabSubmissions(urlParams);
   }
   document.getElementById("content").appendChild(subreddit.$el);
+
+  // Show Images toggle logic (toggle switch)
+  const toggleCheckbox = document.getElementById('toggle-images-checkbox');
+  const toggleLabel = document.getElementById('toggle-images-label');
+  if (toggleCheckbox && toggleLabel) {
+    let showImages = localStorage.getItem('showImages');
+    if (showImages === null) showImages = 'false';
+    window.showImages = showImages === 'true';
+    toggleCheckbox.checked = window.showImages;
+    toggleLabel.textContent = window.showImages ? 'Hide Images' : 'Show Images';
+    toggleCheckbox.onchange = function() {
+      window.showImages = toggleCheckbox.checked;
+      localStorage.setItem('showImages', window.showImages);
+      toggleLabel.textContent = window.showImages ? 'Hide Images' : 'Show Images';
+      window.location.reload();
+    };
+  } else {
+    window.showImages = true;
+  }
 };
 
 /**
