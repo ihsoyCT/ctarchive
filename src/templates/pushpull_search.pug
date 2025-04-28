@@ -1,0 +1,49 @@
+//- PushPull Search Form Template
+form(id="search_form")
+  .searchFlex
+    label(for="backend")
+      span.label Backend
+      select(id="backend" name="backend" onchange="window.switchBackend && window.switchBackend(this.value)")
+        option(value="artic_shift") Arctic Shift
+        option(value="pushpull" selected) PushPull
+    label(for="mode")
+      span.label Comments/Submissions
+      select(id="mode" name="mode")
+        option(value="submissions") Submissions
+        option(value="comments") Comments
+    label(for="subreddit")
+      span.label Subreddit
+      input(type="text" name="subreddit" id="subreddit")
+    label(for="sort_type")
+      span.label Sort Type:
+      select(name="sort_type" id="sort_type")
+        option(value="created_utc") Time
+        option(value="score") Score
+        option(value="num_comments") Comments
+    label(for="sort")
+      span.label Order
+      select(name="sort" id="sort")
+        option(value="desc") desc
+        option(value="asc") asc
+    label(for="limit")
+      span.label Limit:
+      input(type="number" min="1" max="1000" value="100" name="limit" id="limit")
+    label(for="after")
+      span.label After:
+      input(type="datetime-local" name="after" id="after")
+    label(for="before")
+      span.label Before:
+      input(type="datetime-local" name="before" id="before")
+    label(for="author")
+      span.label Author:
+      input(type="text" name="author" id="author")
+    label(for="score")
+      span.label Score:
+      input(type="text" name="score" id="score")
+    label(for="num_comments")
+      span.label Number of comments:
+      input(type="text" name="num_comments" id="num_comments")
+    label(for="q")
+      span.label Search:
+      input(type="text" name="q" id="q")
+    input(type="submit")

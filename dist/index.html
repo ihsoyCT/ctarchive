@@ -13,110 +13,8 @@
       gtag("config", "G-FDHPKF5WPQ");
     </script>
     <title>Reddit Archive</title>
-    <style>
-      .children {
-        margin-left: 20px;
-      }
-      .score {
-        margin-top: auto;
-        margin-bottom: auto; /* width: 20px; */
-        padding-left: 8px; /* align-items: center; */ /* justify-content: center; */ /* align-self: center; */
-        width: 2%;
-      }
+    <link rel="stylesheet" href="style.css" />
 
-      .submissionclass {
-        height: auto;
-        background-color: lightgray;
-        margin: 20px 0px 20px 0px;
-        display: flex;
-      }
-
-      .main {
-        margin-left: 10px;
-      }
-
-      .thumbnail {
-        /* FLOAT: right; */
-        margin-left: auto;
-      }
-
-      div#content {
-        width: 80%;
-        margin: auto;
-      }
-
-      div#highlight {
-        width: 80%;
-        margin: auto;
-        background-color: rgb(233, 230, 39);
-      }
-
-      div#comments_fix {
-        width: 80%;
-        margin: auto;
-      }
-
-      div#orphans {
-        width: 80%;
-        margin: auto;
-      }
-
-      #submission a {
-        font-size: 10px;
-      }
-
-      #submission .post a {
-        font-size: 1rem;
-      }
-
-      .orphan {
-        background-color: darkgray;
-      }
-
-      .posted {
-        font-size: 10px;
-      }
-      .thumbnail img {
-        max-width: 400px;
-      }
-      h3 {
-        margin: 0;
-      }
-      p.comment_title {
-        font-size: 10px;
-      }
-
-      .post {
-        background-color: lightgrey;
-        border: solid;
-        border-width: 1px;
-        margin-bottom: 5px;
-        font-size: 1rem;
-      }
-
-      .post_highlight {
-        background-color: rgb(172, 206, 172);
-        border: solid;
-        border-width: 1px;
-        margin-bottom: 5px;
-        font-size: 1rem;
-      }
-
-      .searchFlex {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .searchFlex * {
-        margin: 1px;
-      }
-      /*
-
-      .break {
-        flex-basis: 100%;
-        height: 0;
-      }*/
-    </style>
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
@@ -139,88 +37,23 @@
       crossorigin="anonymous"
     ></script>
   </head>
+  <div class="links">
+    <a href="./index.html" id="back">Reset</a>
+    <a href="./about.html" id="back">Help/About/Contact</a>
+    <a href="./changelog.html" id="back">Changelog</a>
+  </div>
   <div id="highlight">
     28/04/2025: PushPull is currently not functioning due to server upgrades. When it will be back is currently unknown. <br />
     I added an alternative backend called Arctic Shift, this should have similar features. The main disadvantage is, that you cannot do a fulltext search without setting either subreddit or author
   </div>
   <div class="error" id="error"></div>
+
   <div class="left">
-    <a href="./index.html" id="back">Reset</a>
-    <a href="./about.html" id="back">Help/About/Contact</a>
-    <a href="./changelog.html" id="back">Changelog</a>
-    <div id="searchform">
-      <form id="search_form">
-        <div class="searchFlex">
-          <label for="backend">
-            <span class="label">Backend</span>
-            <select id="backend" name="backend">
-              <option value="artic_shift">Arctic Shift</option>
-              <option value="pushpull">PushPull</option>
-            </select>
-          </label>
-          <label for="mode">
-            <span class="label">Comments/Submissions</span>
-            <select id="mode" name="mode">
-              <option value="submissions">Submissions</option>
-              <option value="comments">Comments</option>
-            </select>
-          </label>
-          <label for="subreddit">
-            <span class="label">Subreddit </span>
-            <input type="text" name="subreddit" id="subreddit" />
-          </label>
-          <label for="sort_type">
-            <span class="label">Sort Type:</span>
-            <select name="sort_type" id="sort_type">
-              <option value="created_utc">Time</option>
-              <option value="score">Score</option>
-              <option value="num_comments">Comments</option>
-            </select>
-          </label>
-          <label for="sort">
-            <span class="label">Order</span>
-            <select name="sort" id="sort">
-              <option value="desc">desc</option>
-              <option value="asc">asc</option>
-            </select>
-          </label>
-          <div class="break"></div>
-          <label for="limit">
-            <span class="label"> Limit: </span>
-            <input type="number" min="1" max="1000" value="100" name="limit" id="limit" />
-          </label>
-          <label for="after">
-            <span class="label">After:</span>
-            <input type="datetime-local" name="after" id="after" />
-          </label>
-          <label for="before">
-            <span class="label">Before:</span>
-            <input type="datetime-local" name="before" id="before" />
-          </label>
-          <label for="author">
-            <span class="label">Author:</span>
-            <input type="text" name="author" id="author" />
-          </label>
-          <div class="break"></div>
-          <label for="score">
-            <span class="label">Score:</span>
-            <input type="text" name="score" id="score" />
-          </label>
-          <label for="num_comments">
-            <span class="label">Number of comments:</span>
-            <input type="text" name="num_comments" id="num_comments" />
-          </label>
-          <label for="q">
-            <span class="label">Search:</span>
-            <input type="text" name="q" id="q" />
-          </label>
-          <input type="submit" />
-        </div>
-      </form>
-    </div>
+    <div id="searchform"></div>
   </div>
   <div id="status"></div>
   <div id="reddit_link"></div>
+  <div id="paginate"></div>
   <div id="content"></div>
   <div id="comments_fix"></div>
   <div id="orphans"></div>
