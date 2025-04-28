@@ -3,6 +3,7 @@ const moment = require("moment");
 const marked = require("marked");
 
 import { artic_shift } from "./artic_shift";
+import { pushpull } from "./pushpull";
 
 function base10to36(number) {
   return parseInt(number).toString(36);
@@ -38,7 +39,7 @@ export const subreddit = {
   })(),
   requestCount: 0,
   changeStatus(status) {
-    document.getElementById("status").innerHTML = status;
+    console.log(status);
   },
   last: null,
   useOld: false,
@@ -56,28 +57,7 @@ export const subreddit = {
   grabSubmissions(urlParams) {
     switch (subreddit.backend) {
       case Backends.PUSHPULL:
-        const request = subreddit.createRequest(urlParams);
-        subreddit.changeStatus("Loading Submissions");
-        axios
-          .get(subreddit.link.submission + "&" + request)
-          .then((e) => {
-            subreddit.$el.innerHTML = "";
-            e.data.data
-              .forEach((sub) => {
-                sub.time = moment.unix(sub.created_utc).format("llll");
-                const imagetypes = ["jpg", "png", "gif"];
-                if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
-                subreddit.$el.innerHTML += subreddit.template.submissionCompiled(sub);
-                subreddit.last = sub;
-              })
-              .then(() => {
-                subreddit.changeStatus("Submissions Loaded");
-              });
-          })
-          .catch((e) => {
-            console.log(e);
-            subreddit.changeStatus("Error Loading Submissions");
-          });
+        pushpull.get_submissions(urlParams, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.get_submissions(urlParams, subreddit);
@@ -87,27 +67,7 @@ export const subreddit = {
   grabComments(id, highlight) {
     switch (subreddit.backend) {
       case Backends.PUSHPULL:
-        subreddit.changeStatus("Loading Comments");
-        console.log(id);
-        console.log("backup");
-        subreddit.changeStatus("Loading Comments (Backup)");
-        subreddit.set_reddit_link(id);
-        subreddit.$el.innerHTML = "";
-        axios
-          .get(subreddit.link.submission + "&ids=" + id)
-          .then((s) => {
-            console.log(s);
-            s.data.data[0].time = moment.unix(s.data.data[0].created_utc).format("llll");
-            s.data.data[0].selftext = marked.parse(s.data.data[0].selftext);
-            subreddit.$el.innerHTML = subreddit.template.submissionCompiled(s.data.data[0]);
-          })
-          .then(() => {
-            subreddit.changeStatus("Submission Loaded");
-          });
-
-        subreddit.loadCommentsBackup(id, highlight).then(() => {
-          subreddit.changeStatus("Comments Loaded");
-        });
+        pushpull.grab_comments(id, highlight, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.grab_comments(id, highlight, subreddit)
@@ -121,79 +81,12 @@ export const subreddit = {
   searchComments(urlParams) {
     switch (this.backend) {
       case Backends.PUSHPULL:
-        const request = subreddit.createRequest(urlParams);
-        axios
-          .get(subreddit.link.commentSearch + "&" + request)
-          .then((e) => {
-            subreddit.$el.innerHTML = "";
-            e.data.data.forEach((post) => {
-              post.time = moment.unix(post.created_utc).format("llll");
-              post.body = marked.parse(post.body);
-              post.link_id = post.link_id.split("_").pop();
-              subreddit.$el.innerHTML += subreddit.template.profilePostCompiled(post);
-              subreddit.last = post;
-            });
-          })
-          .catch(subreddit.error);  
-      break
+        pushpull.search_comments(urlParams, subreddit);
+        break;
       case Backends.ARTIC_SHIFT:
         artic_shift.search_comments(urlParams, subreddit)
-        break
+        break;
     }
-  },
-  async loadCommentsBackup(id, highlight, created_utc = null) {
-    subreddit.changeStatus("Loading Comments (Backup)");
-    let url = subreddit.link.commentsBackup + id;
-    if (created_utc !== null) {
-      url += "&after=" + (created_utc + 1);
-    }
-    if (subreddit.requestCount > 10) {
-      subreddit.requestCount = 0;
-      console.log("Waiting");
-      await subreddit.sleep(10000);
-    }
-    axios
-      .get(url)
-      .then((s) => {
-        subreddit.requestCount++;
-        console.log(s.data.data);
-        let last = null;
-        s.data.data.forEach((post) => {
-          post.time = moment.unix(post.created_utc).format("llll");
-          if (post.id === highlight) {
-            post.postClass = "post_highlight";
-          } else {
-            post.postClass = "post";
-          }
-          post.body = marked.parse(post.body);
-          switch (typeof post.parent_id) {
-            case "undefined":
-              post.parent_id = "t3_" + id;
-              break;
-            case "number":
-              post.parent_id = "t1_" + base10to36(post.parent_id);
-          }
-          if (document.getElementById(post.parent_id)) {
-            document.getElementById(post.parent_id).innerHTML += subreddit.template.postCompiled(post);
-          } else if (post.parent_id == null) {
-            document.getElementById("comments_fix").innerHTML += subreddit.template.postCompiled(post);
-          } else {
-            post.postClass = "orphan";
-            document.getElementById("orphans").innerHTML += subreddit.template.postCompiled(post);
-          }
-          last = post;
-        });
-        console.log("LAST", last);
-        if (last !== null && last.created_utc != created_utc) {
-          subreddit.loadCommentsBackup(id, highlight, last.created_utc);
-        } else {
-          subreddit.changeStatus("Comments Loaded");
-        }
-        if (highlight !== null) document.getElementById(highlight).scrollIntoView();
-      })
-      .catch(() => {
-        subreddit.changeStatus("Error, most likely too many requests. Try again later");
-      });
   },
   set_reddit_link(id) {
     if (id != null) {
@@ -204,3 +97,32 @@ export const subreddit = {
     }
   },
 };
+
+function updateStatusLog(message, type = "info") {
+  const errorDiv = document.getElementById("error");
+  // Remove previous spinner if present
+  if (type === "success" || type === "error") {
+    const spinners = errorDiv.querySelectorAll('.status-icon.spinner');
+    spinners.forEach(spinner => spinner.parentElement && spinner.parentElement.remove());
+  }
+  const line = document.createElement("div");
+  let icon = "";
+  if (type === "loading") {
+    icon = `<span class='status-icon spinner'></span>`;
+  } else if (type === "success") {
+    icon = `<span class='status-icon success'>&#10003;</span>`;
+  } else if (type === "error") {
+    icon = `<span class='status-icon error'>&#10007;</span>`;
+  }
+  line.innerHTML = icon + message;
+  errorDiv.appendChild(line);
+}
+
+export { updateStatusLog };
+
+if (!document.getElementById('status-spinner-style')) {
+  const style = document.createElement('style');
+  style.id = 'status-spinner-style';
+  style.innerHTML = `@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }`;
+  document.head.appendChild(style);
+}

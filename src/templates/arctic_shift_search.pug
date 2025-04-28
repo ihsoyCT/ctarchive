@@ -1,0 +1,72 @@
+//- Arctic Shift Search Form Template
+form(id="search_form" oninput="window.onArcticShiftFormChanged()")
+  .searchFlex
+    label(for="backend")
+      span.label Backend
+      select(id="backend" name="backend" onchange="window.switchBackend && window.switchBackend(this.value)")
+        option(value="artic_shift" selected) Arctic Shift
+        option(value="pushpull") PushPull
+    label(for="mode")
+      span.label Comments/Submissions
+      select(id="mode" name="mode")
+        option(value="submissions") Submissions
+        option(value="comments") Comments
+    label(for="author")
+      span.label Author
+      input(type="text" name="author" id="author")
+    label(for="subreddit")
+      span.label Subreddit
+      input(type="text" name="subreddit" id="subreddit")
+    label(for="author_flair_text")
+      span.label Author Flair Text
+      input(type="text" name="author_flair_text" id="author_flair_text")
+    label(for="after")
+      span.label After
+      input(type="datetime-local" name="after" id="after")
+    label(for="before")
+      span.label Before
+      input(type="datetime-local" name="before" id="before")
+    label(for="limit")
+      span.label Limit
+      input(type="text" name="limit" id="limit" placeholder="1-100 or auto" value="25")
+    label(for="sort")
+      span.label Sort
+      select(name="sort" id="sort")
+        option(value="desc") desc
+        option(value="asc") asc
+    label(for="crosspost_parent_id")
+      span.label Crosspost Parent ID
+      input(type="text" name="crosspost_parent_id" id="crosspost_parent_id")
+    label(for="over_18")
+      span.label Over 18
+      select(name="over_18" id="over_18")
+        option(value="") --
+        option(value="true") true
+        option(value="false") false
+    label(for="spoiler")
+      span.label Spoiler
+      select(name="spoiler" id="spoiler")
+        option(value="") --
+        option(value="true") true
+        option(value="false") false
+    label(for="title")
+      span.label Title
+      input(type="text" name="title" id="title")
+    label(for="selftext")
+      span.label Selftext
+      input(type="text" name="selftext" id="selftext")
+    label(for="link_flair_text")
+      span.label Link Flair Text
+      input(type="text" name="link_flair_text" id="link_flair_text")
+    label(for="query")
+      span.label Query
+      input(type="text" name="query" id="query")
+    label(for="url")
+      span.label URL
+      input(type="text" name="url" id="url")
+    label(for="url_exact")
+      span.label URL Exact
+      select(name="url_exact" id="url_exact")
+        option(value="false" selected) false
+        option(value="true") true
+    input(type="submit")
