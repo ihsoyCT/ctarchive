@@ -164,10 +164,10 @@ p.comment_title {
   border: none;
   text-decoration: underline;
 }
-.error {
+#error.error {
   width: 80% !important;
   margin: 8px auto 0 auto !important;
-  padding: 4px 10px !important;
+  padding: 10px !important;
   background: #f4f6fa !important;
   color: #333 !important;
   border: 1px solid #d3dae6 !important;
@@ -176,6 +176,16 @@ p.comment_title {
   min-height: 24px !important;
   max-height: 200px !important;
   overflow-y: auto !important;
+}
+
+#error.error.error-active {
+  background: #ffdddd !important;
+  color: #a33 !important;
+  border: 1.5px solid #d33 !important;
+}
+
+#error.error:empty {
+  display: none;
 }
 .disabled-field {
   background: #f0f0f0 !important;
@@ -224,4 +234,33 @@ p.comment_title {
 }
 .pagination-btn:hover {
   background: #0056b3;
+}
+.pagination-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 18px 0 0 0;
+}
+.pagination-link {
+  display: inline-block;
+  text-align: center;
+  font-weight: bold;
+  margin: 0 18px;
+  width: auto;
+  padding: 0;
+  background: none;
+  color: #007bff;
+  border: none;
+  border-radius: 0;
+  font-size: 22px;
+  box-shadow: none;
+  text-decoration: none;
+  transition: color 0.2s;
+  vertical-align: middle;
+}
+.pagination-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+  background: none;
 }

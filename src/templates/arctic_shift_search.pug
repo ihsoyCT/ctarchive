@@ -67,6 +67,7 @@ form(id="search_form" oninput="window.onArcticShiftFormChanged()")
     label(for="url_exact")
       span.label URL Exact
       select(name="url_exact" id="url_exact")
-        option(value="false" selected) false
+        option(value="" selected) --
+        option(value="false") false
         option(value="true") true
     input(type="submit")

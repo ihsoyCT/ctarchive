@@ -18,46 +18,41 @@ function addPaginationLinks({ data, urlParams, container }) {
     // Next Page (Older/Younger Posts)
     const nextLink = document.createElement('a');
     nextLink.className = 'pagination-link';
-    nextLink.style.display = 'block';
-    nextLink.style.margin = '20px auto 0 auto';
-    nextLink.style.textAlign = 'center';
-    nextLink.style.fontWeight = 'bold';
 
     // Previous Page (Newer/Older Posts)
     const prevLink = document.createElement('a');
     prevLink.className = 'pagination-link';
-    prevLink.style.display = 'block';
-    prevLink.style.margin = '10px auto 0 auto';
-    prevLink.style.textAlign = 'center';
-    prevLink.style.fontWeight = 'bold';
-
     if (sortOrder === 'desc') {
         // Next: before=lastCreatedUtc (older)
-        nextLink.textContent = 'Next Page (Older Posts)';
+        nextLink.textContent = '>>';
         const urlParamsNext = new URLSearchParams(window.location.search);
         urlParamsNext.set('before', lastCreatedUtc);
         nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
         // Previous: after=firstCreatedUtc (newer)
-        prevLink.textContent = 'Previous Page (Newer Posts)';
+        prevLink.textContent = '<<';
         const urlParamsPrev = new URLSearchParams(window.location.search);
         urlParamsPrev.set('after', firstCreatedUtc);
         urlParamsPrev.delete('before');
         prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
     } else {
         // Next: after=lastCreatedUtc (newer)
-        nextLink.textContent = 'Next Page (Newer Posts)';
+        nextLink.textContent = '>>';
         const urlParamsNext = new URLSearchParams(window.location.search);
         urlParamsNext.set('after', lastCreatedUtc);
         nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
         // Previous: before=firstCreatedUtc (older)
-        prevLink.textContent = 'Previous Page (Older Posts)';
+        prevLink.textContent = '<<';
         const urlParamsPrev = new URLSearchParams(window.location.search);
         urlParamsPrev.set('before', firstCreatedUtc);
         urlParamsPrev.delete('after');
         prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }
-    container.appendChild(nextLink);
-    container.appendChild(prevLink);
+    }    // Clear container and center links
+    container.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pagination-container';
+    wrapper.appendChild(prevLink);
+    wrapper.appendChild(nextLink);
+    container.appendChild(wrapper);
 }
 
 /**
@@ -97,12 +92,6 @@ export const artic_shift = {
         add_to_url(query, "url", urlParams.get("url"));
         add_to_url(query, "url_exact", urlParams.get("url_exact"));
 
-        // Only request fields actually used in the templates
-        const filterFields = [
-            "id", "author", "score", "created_utc", "title", "selftext", "subreddit", "url", "num_comments", "author_flair_text", "thumbnail"
-        ];
-        add_to_url(query, "filter", filterFields.join(","));
-
         const url = `${this.base_url}${this.submission_end_point}?${query.join('&')}`;
         updateStatusLog(`Grabbing Submissions from Arctic_shift with params: ${urlParams.toString()}`, "loading");
         axios
@@ -114,14 +103,29 @@ export const artic_shift = {
                     sub.time = moment.unix(sub.created_utc).format("llll");
                     const imagetypes = ["jpg", "png", "gif", "jpeg"];
                     if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
+
+                    // If preview exists, collect all images[].source.url into sub.previews
+                    if (sub.preview && Array.isArray(sub.preview.images)) {
+                        sub.previews = sub.preview.images.map(img => img.source && img.source.url).filter(Boolean);
+                    }
+                    // If media_metadata exists, add all s.u from each image to sub.previews
+                    if (sub.media_metadata && typeof sub.media_metadata === 'object') {
+                        if (!sub.previews) sub.previews = [];
+                        Object.values(sub.media_metadata).forEach(meta => {
+                            if (meta && meta.s && meta.s.u) {
+                                sub.previews.push(meta.s.u);
+                            }
+                        });
+                    }
                     const tempDiv = document.createElement('div');
+
                     tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
                     frag.appendChild(tempDiv.firstElementChild);
                     subreddit.last = sub;
                 });
                 subreddit.$el.appendChild(frag);
                 updateStatusLog(`Done grabbing submissions from Arctic_shift`, "success");
-                addPaginationLinks({ data: e.data.data, urlParams, container: subreddit.$el });
+                addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
             })
             .catch((error) => {
                 let errorMsg = error?.response?.data?.error || error.message;
@@ -154,18 +158,14 @@ export const artic_shift = {
         add_to_url(query, "url", urlParams.get("url"));
         add_to_url(query, "url_exact", urlParams.get("url_exact"));
 
-        // Only request fields actually used in the templates
-        const filterFields = [
-            "id", "author", "score", "created_utc", "body", "subreddit", "link_id", "permalink", "author_flair_text"
-        ];
-        add_to_url(query, "filter", filterFields.join(","));
-
         const url = `${this.base_url}${this.comments_search}?${query.join('&')}`;
         updateStatusLog(`Searching comments from Arctic_shift with params: ${urlParams.toString()}`, "loading");
         axios.get(url).then(response => {
+            console.log(response.data.data);
             subreddit.$el.innerHTML = "";
             const frag = document.createDocumentFragment();
             response.data.data.forEach((post) => {
+                console.log(post);
                 post.time = moment.unix(post.created_utc).format("llll");
                 post.body = marked.parse(post.body);
                 post.link_id = post.link_id.split("_").pop();
@@ -176,12 +176,12 @@ export const artic_shift = {
             });
             subreddit.$el.appendChild(frag);
             updateStatusLog(`Done searching comments from Arctic_shift`, "success");
-            addPaginationLinks({ data: response.data.data, urlParams, container: subreddit.$el });
+            addPaginationLinks({ data: response.data.data, urlParams, container: document.getElementById('paginate') });
         })
-            .catch((error) => {
-                let errorMsg = error?.response?.data?.error || error.message;
-                updateStatusLog(`Error searching comments from Arctic_shift: ${errorMsg}`, "error");
-            });
+        .catch((error) => {
+            let errorMsg = error?.response?.data?.error || error.message;
+            updateStatusLog(`Error searching comments from Arctic_shift: ${errorMsg}`, "error");
+        });
     },
     /**
      * Fetch a submission and its comment tree by ID from Arctic Shift API.

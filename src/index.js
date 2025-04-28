@@ -20,16 +20,8 @@ function renderSearchForm(backend) {
   }
 }
 
-/**
- * Paginate Arctic Shift results by re-running the search with updated params.
- * @param {URLSearchParams} urlParams
- */
-function arcticShiftPaginate(urlParams) {
-  const { artic_shift } = require('./artic_shift');
-  artic_shift.get_submissions(urlParams, subreddit, arcticShiftPaginate);
-}
-
 window.onload = () => {
+  console.log("Page loaded");
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
   let backend = urlParams.get("backend") || "artic_shift";
@@ -47,10 +39,11 @@ window.onload = () => {
     subreddit.backend = Backends.PUSHPULL;
   } else if (backend === "artic_shift") {
     subreddit.backend = Backends.ARTIC_SHIFT;
-    arcticShiftPaginate(urlParams);
-    return;
   }
+
   if (!urlParams.has("limit")) urlParams.set("limit", 100);
+
+  console.log("URL Params: ", urlParams.toString());
   if (mode === "comments") {
     populateForm(urlParams);
     urlParams.delete("mode");
@@ -90,7 +83,7 @@ function updateArcticShiftFieldState() {
   const subreddit = document.getElementById('subreddit');
   const disable = (!author || !subreddit || (!author.value && !subreddit.value));
   const reason = 'Disabled: requires author or subreddit';
-  ['title', 'selftext', 'query', 'url'].forEach(function (id) {
+  ['title', 'selftext', 'query', 'url', 'link_flair_text', 'author_flair_text'].forEach(function (id) {
     const el = document.getElementById(id);
     if (el) {
       el.disabled = disable;

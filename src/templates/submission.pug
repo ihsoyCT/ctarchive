@@ -17,6 +17,12 @@ div(class='submissionclass')
 
         div(class='post') !{selftext}
     div(class='thumbnail')
-        img(src=thumbnail)
+        if previews
+            each preview in previews
+                a(href=preview, target='_blank')
+                    img(src=preview)
+        else if thumbnail
+            a(href=thumbnail, target='_blank')
+                img(src=thumbnail)
 
 div(id='t3_' + id)

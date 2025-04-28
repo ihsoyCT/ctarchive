@@ -148,6 +148,12 @@ function updateStatusLog(message, type = "info") {
     const spinners = errorDiv.querySelectorAll('.status-icon.spinner');
     spinners.forEach(spinner => spinner.parentElement && spinner.parentElement.remove());
   }
+  // Toggle red background for error only if error, remove otherwise
+  if (type === "error") {
+    errorDiv.classList.add("error-active");
+  } else {
+    errorDiv.classList.remove("error-active");
+  }
   const line = document.createElement("div");
   let icon = "";
   if (type === "loading") {
@@ -155,10 +161,18 @@ function updateStatusLog(message, type = "info") {
   } else if (type === "success") {
     icon = `<span class='status-icon success'>&#10003;</span>`;
   } else if (type === "error") {
-    icon = `<span class='status-icon error'>&#10007;</span>`;
+    // Use a more normal, straight cross (multiplication sign)
+    icon = `<span class='status-icon error' style="font-family:monospace;font-weight:bold;">&#215;</span>`;
   }
   line.innerHTML = icon + message;
   errorDiv.appendChild(line);
+
+  // Hide error div if empty (no children)
+  if (errorDiv.childElementCount === 0) {
+    errorDiv.style.display = 'none';
+  } else {
+    errorDiv.style.display = '';
+  }
 }
 
 export { updateStatusLog };
