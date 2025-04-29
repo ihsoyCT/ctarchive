@@ -133,7 +133,29 @@ export const subreddit = {
       redditLinkDiv.innerHTML = "";
     }
   },
+  onModeChange(select) {
+    if (select === "submissions") {
+      Array.from(document.getElementsByClassName("submission_only")).forEach(e => {
+        e.style.display = "";
+        e.querySelectorAll('input, select, textarea, button').forEach(ctrl => ctrl.removeAttribute('disabled'));
+      })
+      Array.from(document.getElementsByClassName("comments_only")).forEach(e => {
+        e.style.display = "none";
+        e.querySelectorAll('input, select, textarea, button').forEach(ctrl =>  ctrl.setAttribute('disabled', 'disabled'));
+      })
+    } else {
+      Array.from(document.getElementsByClassName("submission_only")).forEach(e => {
+        e.style.display = "none";
+        e.querySelectorAll('input, select, textarea, button').forEach(ctrl => ctrl.setAttribute('disabled', 'disabled'));
+      })
+      Array.from(document.getElementsByClassName("comments_only")).forEach(e => {
+        e.style.display = "";
+        e.querySelectorAll('input, select, textarea, button').forEach(ctrl => ctrl.removeAttribute('disabled'));
+      })
+    }
+  }
 };
+
 
 /**
  * Update the status log UI with a message and type.

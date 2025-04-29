@@ -8,7 +8,7 @@ form(id="search_form" oninput="window.onArcticShiftFormChanged()")
         option(value="pushpull") PushPull
     label(for="mode")
       span.label Comments/Submissions
-      select(id="mode" name="mode")
+      select(id="mode" name="mode" onchange="window.onModeChange(this.value)")
         option(value="submissions") Submissions
         option(value="comments") Comments
     label(for="author")
@@ -19,7 +19,7 @@ form(id="search_form" oninput="window.onArcticShiftFormChanged()")
       input(type="text" name="subreddit" id="subreddit")
     label(for="author_flair_text")
       span.label Author Flair Text
-      input(type="text" name="author_flair_text" id="author_flair_text")
+      input(type="text" name="author_flair_text" id="author_flair_text" data-required="author,subreddit")
     label(for="after")
       span.label After
       input(type="datetime-local" name="after" id="after")
@@ -27,47 +27,57 @@ form(id="search_form" oninput="window.onArcticShiftFormChanged()")
       span.label Before
       input(type="datetime-local" name="before" id="before")
     label(for="limit")
-      span.label Limit
-      input(type="text" name="limit" id="limit" placeholder="1-100 or auto" value="25")
+      span.label Limit 
+          span(style="font-size:11px; margin-left:2px; color:#888;") 1-100 or auto
+      input(type="text" name="limit" id="limit" placeholder="1-100 or auto" value="100")
     label(for="sort")
       span.label Sort
       select(name="sort" id="sort")
         option(value="desc") desc
         option(value="asc") asc
-    label(for="crosspost_parent_id")
+    label(for="crosspost_parent_id" class="submission_only")
       span.label Crosspost Parent ID
-      input(type="text" name="crosspost_parent_id" id="crosspost_parent_id")
-    label(for="over_18")
+      input(type="text" name="crosspost_parent_id" id="crosspost_parent_id" data-required="author,subreddit")
+    label(for="over_18" class="submission_only")
       span.label Over 18
       select(name="over_18" id="over_18")
         option(value="") --
         option(value="true") true
         option(value="false") false
-    label(for="spoiler")
+    label(for="spoiler" class="submission_only")
       span.label Spoiler
       select(name="spoiler" id="spoiler")
         option(value="") --
         option(value="true") true
         option(value="false") false
-    label(for="title")
+    label(for="title" class="submission_only")
       span.label Title
-      input(type="text" name="title" id="title")
-    label(for="selftext")
+      input(type="text" name="title" id="title" data-required="author,subreddit")
+    label(for="selftext" class="submission_only")
       span.label Selftext
-      input(type="text" name="selftext" id="selftext")
-    label(for="link_flair_text")
+      input(type="text" name="selftext" id="selftext" data-required="author,subreddit")
+    label(for="link_flair_text" class="submission_only")
       span.label Link Flair Text
-      input(type="text" name="link_flair_text" id="link_flair_text")
-    label(for="query")
-      span.label Query
-      input(type="text" name="query" id="query")
-    label(for="url")
+      input(type="text" name="link_flair_text" id="link_flair_text" data-required="author,subreddit")
+    label(for="url" class="submission_only")
       span.label URL
-      input(type="text" name="url" id="url")
-    label(for="url_exact")
+      input(type="text" name="url" id="url" data-required="author,subreddit")
+    label(for="url_exact" class="submission_only")
       span.label URL Exact
-      select(name="url_exact" id="url_exact")
+      select(name="url_exact" id="url_exact" data-required="author,subreddit")
         option(value="" selected) --
         option(value="false") false
         option(value="true") true
+    label(for="query" class="submission_only")
+      span.label Query
+      input(type="text" name="query" id="query" data-required="author,subreddit")
+    label(for="body" class="comments_only")
+      span.label Body
+      input(type="text" name="body" id="body" data-required="author,subreddit,link_id,parent_id")
+    label(for="link_id" class="comments_only")
+      span.label Link ID
+      input(type="text" name="link_id" id="link_id")
+    label(for="parent_id" class="comments_only")
+      span.label Parent ID
+      input(type="text" name="parent_id" id="parent_id" placeholder="Empty = top level comment")
     input(type="submit")

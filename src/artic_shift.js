@@ -9,6 +9,19 @@ const add_to_url = (query, param_text, value) => {
     }
 }
 
+/**
+ * Populate form fields from URLSearchParams.
+ * @param {URLSearchParams} urlParams
+ */
+function populateForm(urlParams) {
+    urlParams.forEach((a) => {
+        let [k, p] = a.split('=');
+        const el = document.getElementById(k);
+        if (el && typeof el.value !== 'undefined') el.value = p;
+    });
+}
+
+
 function addPaginationLinks({ data, urlParams, container }) {
     if (!data || data.length === 0) return;
     const sortOrder = urlParams.get('sort') || 'desc';
@@ -73,24 +86,34 @@ export const artic_shift = {
      */
     get_submissions(urlParams, subreddit) {
         let query = [];
-        add_to_url(query, "sort", urlParams.get("sort"));
-        add_to_url(query, "after", urlParams.get("after"));
-        add_to_url(query, "before", urlParams.get("before"));
-        add_to_url(query, "author", urlParams.get("author"));
-        add_to_url(query, "subreddit", urlParams.get("subreddit"));
-        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
-        add_to_url(query, "limit", urlParams.get("limit"));
-        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
-        add_to_url(query, "over_18", urlParams.get("over_18"));
-        add_to_url(query, "spoiler", urlParams.get("spoiler"));
-        add_to_url(query, "title", urlParams.get("title"));
-        // Backwards compatibility: if 'q' is present, use it as 'selftext'
-        let selftextValue = urlParams.get("q") || urlParams.get("selftext");
-        add_to_url(query, "selftext", selftextValue);
-        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"));
-        add_to_url(query, "query", urlParams.get("query"));
-        add_to_url(query, "url", urlParams.get("url"));
-        add_to_url(query, "url_exact", urlParams.get("url_exact"));
+        // Legacy mode: if 'q' is present (even if empty), use it for 'query' and set limit to 'auto', only include relevant params
+        if (urlParams.has("q")) {
+            add_to_url(query, "subreddit", urlParams.get("subreddit"));
+            add_to_url(query, "sort", urlParams.get("sort"));
+            add_to_url(query, "after", urlParams.get("after"));
+            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "author", urlParams.get("author"));
+            add_to_url(query, "query", urlParams.get("q"));
+            add_to_url(query, "limit", "auto");
+            populateForm(query)
+        } else {
+            add_to_url(query, "sort", urlParams.get("sort"));
+            add_to_url(query, "after", urlParams.get("after"));
+            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "author", urlParams.get("author"));
+            add_to_url(query, "subreddit", urlParams.get("subreddit"));
+            add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
+            add_to_url(query, "limit", urlParams.get("limit"));
+            add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
+            add_to_url(query, "over_18", urlParams.get("over_18"));
+            add_to_url(query, "spoiler", urlParams.get("spoiler"));
+            add_to_url(query, "title", urlParams.get("title"));
+            add_to_url(query, "selftext", urlParams.get("selftext"));
+            add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"));
+            add_to_url(query, "query", urlParams.get("query"));
+            add_to_url(query, "url", urlParams.get("url"));
+            add_to_url(query, "url_exact", urlParams.get("url_exact"));
+        }
 
         const url = `${this.base_url}${this.submission_end_point}?${query.join('&')}`;
         updateStatusLog(`Grabbing Submissions from Arctic_shift with params: ${urlParams.toString()}`, "loading");
@@ -139,24 +162,28 @@ export const artic_shift = {
      */
     search_comments(urlParams, subreddit) {
         let query = [];
-        add_to_url(query, "sort", urlParams.get("sort"));
-        add_to_url(query, "after", urlParams.get("after"));
-        add_to_url(query, "before", urlParams.get("before"));
-        add_to_url(query, "author", urlParams.get("author"));
-        add_to_url(query, "subreddit", urlParams.get("subreddit"));
-        add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
-        add_to_url(query, "limit", urlParams.get("limit"));
-        add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
-        add_to_url(query, "over_18", urlParams.get("over_18"));
-        add_to_url(query, "spoiler", urlParams.get("spoiler"));
-        add_to_url(query, "title", urlParams.get("title"));
-        // Backwards compatibility: if 'q' is present, use it as 'selftext'
-        let selftextValue = urlParams.get("q") || urlParams.get("selftext");
-        add_to_url(query, "selftext", selftextValue);
-        add_to_url(query, "link_flair_text", urlParams.get("link_flair_text"));
-        add_to_url(query, "query", urlParams.get("query"));
-        add_to_url(query, "url", urlParams.get("url"));
-        add_to_url(query, "url_exact", urlParams.get("url_exact"));
+        if (urlParams.has("q")) {
+            add_to_url(query, "subreddit", urlParams.get("subreddit"));
+            add_to_url(query, "sort", urlParams.get("sort"));
+            add_to_url(query, "after", urlParams.get("after"));
+            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "author", urlParams.get("author"));
+            add_to_url(query, "body", urlParams.get("q"));
+            add_to_url(query, "limit", "100");
+            populateForm(query)
+        } else {
+            add_to_url(query, "sort", urlParams.get("sort"));
+            add_to_url(query, "after", urlParams.get("after"));
+            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "author", urlParams.get("author"));
+            add_to_url(query, "subreddit", urlParams.get("subreddit"));
+            add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
+            add_to_url(query, "limit", urlParams.get("limit"));
+            add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
+            add_to_url(query, "body", urlParams.get("body"));
+            add_to_url(query, "link_id", urlParams.get("link_id"));
+            add_to_url(query, "parent_id", urlParams.get("parent_id"));
+        }
 
         const url = `${this.base_url}${this.comments_search}?${query.join('&')}`;
         updateStatusLog(`Searching comments from Arctic_shift with params: ${urlParams.toString()}`, "loading");
@@ -178,10 +205,10 @@ export const artic_shift = {
             updateStatusLog(`Done searching comments from Arctic_shift`, "success");
             addPaginationLinks({ data: response.data.data, urlParams, container: document.getElementById('paginate') });
         })
-        .catch((error) => {
-            let errorMsg = error?.response?.data?.error || error.message;
-            updateStatusLog(`Error searching comments from Arctic_shift: ${errorMsg}`, "error");
-        });
+            .catch((error) => {
+                let errorMsg = error?.response?.data?.error || error.message;
+                updateStatusLog(`Error searching comments from Arctic_shift: ${errorMsg}`, "error");
+            });
     },
     /**
      * Fetch a submission and its comment tree by ID from Arctic Shift API.
