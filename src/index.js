@@ -26,15 +26,7 @@ window.onload = () => {
   const urlParams = new URLSearchParams(queryString);
   let backend = urlParams.get("backend") || "artic_shift";
   renderSearchForm(backend);
-  const backendSelector = document.getElementById("backend");
-  if (backendSelector) {
-    backendSelector.value = backend;
-    backendSelector.addEventListener("change", (e) => {
-      renderSearchForm(e.target.value);
-    });
-  }
   urlParams.delete("backend");
-  const mode = urlParams.get("mode");
   if (backend === "pushpull") {
     subreddit.backend = Backends.PUSHPULL;
   } else if (backend === "artic_shift") {
@@ -42,8 +34,9 @@ window.onload = () => {
   }
 
   if (!urlParams.has("limit")) urlParams.set("limit", 100);
-
   console.log("URL Params: ", urlParams.toString());
+  
+  const mode = urlParams.get("mode");
   if (mode === "comments") {
     populateForm(urlParams);
     urlParams.delete("mode");
@@ -60,10 +53,8 @@ window.onload = () => {
   // Show Images toggle logic (toggle switch)
   const toggleCheckbox = document.getElementById('toggle-images-checkbox');
   const toggleLabel = document.getElementById('toggle-images-label');
+  window.showImages = (localStorage.getItem('showImages') === 'true');
   if (toggleCheckbox && toggleLabel) {
-    let showImages = localStorage.getItem('showImages');
-    if (showImages === null) showImages = 'false';
-    window.showImages = showImages === 'true';
     toggleCheckbox.checked = window.showImages;
     toggleLabel.textContent = window.showImages ? 'Hide Images' : 'Show Images';
     toggleCheckbox.onchange = function() {
@@ -89,9 +80,6 @@ function populateForm(urlParams) {
 }
 
 window.switchBackend = function (newBackend) {
-  if (newBackend === "arctic_shift" && window.onArcticShiftFormChanged) {
-    window.onArcticShiftFormChanged();
-  }
   renderSearchForm(newBackend);
   const backendSelector = document.getElementById("backend");
   if (backendSelector) backendSelector.value = newBackend;

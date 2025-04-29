@@ -104,7 +104,6 @@ const pushpull = {
       })
       .catch((e) => {
         updateStatusLog(`Error searching comments from PushPull: ${e.message}`, "error");
-        subreddit.error && subreddit.error(e);
       });
   },
 
