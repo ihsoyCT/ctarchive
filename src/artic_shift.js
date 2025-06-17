@@ -124,22 +124,7 @@ export const artic_shift = {
                 const frag = document.createDocumentFragment();
                 e.data.data.forEach((sub) => {
                     sub.time = moment.unix(sub.created_utc).format("llll");
-                    const imagetypes = ["jpg", "png", "gif", "jpeg"];
-                    if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
-
-                    // If preview exists, collect all images[].source.url into sub.previews
-                    if (sub.preview && Array.isArray(sub.preview.images)) {
-                        sub.previews = sub.preview.images.map(img => img.source && img.source.url).filter(Boolean);
-                    }
-                    // If media_metadata exists, add all s.u from each image to sub.previews
-                    if (sub.media_metadata && typeof sub.media_metadata === 'object') {
-                        if (!sub.previews) sub.previews = [];
-                        Object.values(sub.media_metadata).forEach(meta => {
-                            if (meta && meta.s && meta.s.u) {
-                                sub.previews.push(meta.s.u);
-                            }
-                        });
-                    }
+                    set_thumbmail(sub);
                     const tempDiv = document.createElement('div');
 
                     tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
@@ -224,6 +209,7 @@ export const artic_shift = {
         axios.get(submission_url).then((e) => {
             e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
             e.data.data[0].selftext = marked.parse(e.data.data[0].selftext);
+            set_thumbmail(e.data.data[0]);
             subreddit.$el.innerHTML = subreddit.template.submissionCompiled(e.data.data[0]);
             updateStatusLog(`Done grabbing submission by ID from Arctic_shift`, "success");
         }).catch((error) => {
@@ -292,5 +278,24 @@ export const artic_shift = {
     }
 };
 
+
+function set_thumbmail(sub) {
+    const imagetypes = ["jpg", "png", "gif", "jpeg"];
+    if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = sub.url;
+
+    // If preview exists, collect all images[].source.url into sub.previews
+    if (sub.preview && Array.isArray(sub.preview.images)) {
+        sub.previews = sub.preview.images.map(img => img.source && img.source.url).filter(Boolean);
+    }
+    // If media_metadata exists, add all s.u from each image to sub.previews
+    if (sub.media_metadata && typeof sub.media_metadata === 'object') {
+        if (!sub.previews) sub.previews = [];
+        Object.values(sub.media_metadata).forEach(meta => {
+            if (meta && meta.s && meta.s.u) {
+                sub.previews.push(meta.s.u);
+            }
+        });
+    }
+}
 // https://arctic-shift.photon-reddit.com/api/posts/search?sort=asc&after=2019-12-30&subreddit=worldnews&title=wuhan&limit=10
 // https://arctic-shift.photon-reddit.com/search/api/posts/search?sort=desc&after=&before=&author=&subreddit=&limit=100&title=
