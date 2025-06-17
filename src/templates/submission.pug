@@ -7,7 +7,9 @@ div(class='submissionclass')
             a(href='index.html?mode=comments&author=' + author) Comments 
             | at #{time} 
             | in 
-            a(href='index.html?subreddit=' + subreddit) #{subreddit}
+            a(href='index.html?subreddit=' + subreddit) #{subreddit} 
+            a(href='https://reddit.com/' + permalink)
+                b Orignal Reddit Link
         div(class='title')
             h3 #{title}
         div
