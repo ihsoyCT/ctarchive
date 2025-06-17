@@ -219,6 +219,8 @@ export const artic_shift = {
     grab_comments(id, highlight, subreddit) {
         const submission_url = `${this.base_url}${this.singular_submission}?ids=${id}`;
         updateStatusLog(`Grabbing Submission by ID from Arctic_shift: ${id}`, "loading");
+
+        document.getElementById("comments").innerHTML=`<div id=t3_${id}></div>`
         axios.get(submission_url).then((e) => {
             e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
             e.data.data[0].selftext = marked.parse(e.data.data[0].selftext);
@@ -264,7 +266,7 @@ export const artic_shift = {
                 "id": data.id,
                 "author": data.author,
                 "score": data.score,
-                "time": data.created_utc,
+                "time": moment.unix(data.created_utc).format("llll"),
                 "body": data.body,
                 "postClass": data.id === highlight ? "post_highlight" : "post"
             };

