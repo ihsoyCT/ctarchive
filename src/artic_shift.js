@@ -266,7 +266,7 @@ export const artic_shift = {
                 "id": data.id,
                 "author": data.author,
                 "score": data.score,
-                "time": data.created_utc,
+                "time": moment.unix(data.created_utc).format("llll"),
                 "body": data.body,
                 "postClass": data.id === highlight ? "post_highlight" : "post"
             };
