@@ -45,7 +45,7 @@ window.onload = () => {
     subreddit.onModeChange("comments");
   } else if (urlParams.get("comments") !== null) {
     subreddit.grabComments(urlParams.get("comments"), urlParams.get("id"));
-  } else if (urlParams.has("subreddit")) {
+  } else if (mode === "submissions" ||  urlParams.has("subreddit")) {
     populateForm(urlParams);
     urlParams.delete("mode");
     subreddit.grabSubmissions(urlParams);
@@ -172,4 +172,26 @@ function setupArcticShiftFieldState() {
 
 window.onArcticShiftFormChanged = () => {
   setupArcticShiftFieldState();
+}
+
+window.handleSearchFormSubmit = function(e) {
+  const form = e.target;
+  // Build URLSearchParams with only non-empty values
+  const params = new URLSearchParams();
+  Array.from(form.elements).forEach(el => {
+    if (!el.name || el.disabled || el.type === 'submit' || el.type === 'button') return;
+    // For checkboxes/radios, only add if checked
+    if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+    if (el.value !== undefined && el.value !== null && el.value !== '') {
+      params.append(el.name, el.value);
+    }
+  });
+  // Add backend and mode if present
+  const backend = form.elements['backend'] ? form.elements['backend'].value : undefined;
+  if (backend) params.set('backend', backend);
+  const mode = form.elements['mode'] ? form.elements['mode'].value : undefined;
+  if (mode) params.set('mode', mode);
+  // Reload page with new params
+  window.location.search = '?' + params.toString();
+  return false;
 }

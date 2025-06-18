@@ -1,5 +1,5 @@
 //- PushPull Search Form Template
-form(id="search_form")
+form(id="search_form" onsubmit="return window.handleSearchFormSubmit(event)")
   .searchFlex
     label(for="backend")
       span.label Backend
