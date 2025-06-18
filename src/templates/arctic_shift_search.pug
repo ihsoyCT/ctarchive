@@ -1,5 +1,5 @@
 //- Arctic Shift Search Form Template
-form(id="search_form" oninput="window.onArcticShiftFormChanged()")
+form(id="search_form" oninput="window.onArcticShiftFormChanged()" onsubmit="return window.handleSearchFormSubmit(event)")
   .searchFlex
     label(for="backend")
       span.label Backend
