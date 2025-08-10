@@ -3,7 +3,7 @@ const moment = require("moment");
 const marked = require("marked");
 import { updateStatusLog } from "./subreddit";
 
-const backendUrl = "http://localhost:3030"; // Change to your backend URL
+const backendUrl = "http://ihsoy.com"; // Change to your backend URL
 
 const add_to_url = (query, param_text, value) => {
     if (value !== undefined && value?.length > 0) {
