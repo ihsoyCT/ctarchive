@@ -38,6 +38,7 @@ window.onload = () => {
 
   // Check for Reddit-style comment URL
   const pathMatch = window.location.pathname.match(/r\/[^\/]+\/comments\/(\w+)(?:\/[^\/]+)?\/(\w+)\/?/);
+  console.log("Path Match: ", pathMatch);
   if (pathMatch) {
     const comments = pathMatch[1];
     const id = pathMatch[2];
