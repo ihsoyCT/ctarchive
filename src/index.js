@@ -35,7 +35,17 @@ window.onload = () => {
 
   if (!urlParams.has("limit")) urlParams.set("limit", 100);
   console.log("URL Params: ", urlParams.toString());
-  
+
+  // Check for Reddit-style comment URL
+  const pathMatch = window.location.pathname.match(/r\/[^\/]+\/comments\/(\w+)(?:\/[^\/]+)?\/(\w+)\/?/);
+  if (pathMatch) {
+    const comments = pathMatch[1];
+    const id = pathMatch[2];
+    subreddit.grabComments(comments, id);
+    document.getElementById("content").prepend(subreddit.$el);
+    return;
+  }
+
   subreddit.onModeChange("submissions");
   const mode = urlParams.get("mode");
   if (mode === "comments") {
