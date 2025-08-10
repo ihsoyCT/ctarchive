@@ -237,13 +237,17 @@ export const artic_shift = {
 
             if (true) {
                 console.log(this.comments_count);
-                if(this.comments_count > 2000) {
+                
+                updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
+                if (this.comments_count > 2000) {
                     updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
                     return;
                 }
                 let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
                     .then(resp => resp.status === 200 ? resp.data["ids"] : [])
-                    .catch(() => []);
+                    .catch((err) => {
+                        updateStatusLog(`Could not load reddit comments: error: ${err.data}.`, "error");
+                    });
 
                 deletedIdsPromise.then(deletedIds => {
                     const arcticIds = new Set(comments.map(c => c.data.id));

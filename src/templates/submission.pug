@@ -3,11 +3,11 @@ div(class='submissionclass')
     div(class='main')
         div(class='posted') Posted by 
             a(href='https://reddit.com/user/' + author) #{author} 
-            a(href='index.html?mode=submissions&subreddit=&author=' + author) Submissions 
-            a(href='index.html?mode=comments&author=' + author) Comments 
+            a(href='/index.html?mode=submissions&subreddit=&author=' + author) Submissions 
+            a(href='/index.html?mode=comments&author=' + author) Comments 
             | at #{time} 
             | in 
-            a(href='index.html?subreddit=' + subreddit) #{subreddit} 
+            a(href='/index.html?subreddit=' + subreddit) #{subreddit} 
             a(href='https://reddit.com/' + permalink)
                 b Orignal Reddit Link
         div(class='title')
@@ -15,7 +15,7 @@ div(class='submissionclass')
         div
             a(href=url) #{url}
         div(class='commentlink')
-            a(href='index.html?comments=' + id) #{num_comments} Comments
+            a(href='/index.html?comments=' + id) #{num_comments} Comments
 
         div(class='post') !{selftext}
     div(class='thumbnail')
