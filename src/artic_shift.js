@@ -235,9 +235,14 @@ export const artic_shift = {
             }
             updateStatusLog(`Done loading comments from Arctic_shift.`, "success");
 
+            // Only run deleted check if comments were successfully loaded
+            if (comments.length === 0) {
+                updateStatusLog(`Could not load comments from Arctic_shift, skipping deleted check.`, "error");
+                return;
+            }
+            // Only do the deleted check if there are less than 2000 comments
             if (true) {
                 console.log(this.comments_count);
-                
                 updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
                 if (this.comments_count > 2000) {
                     updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
@@ -246,10 +251,14 @@ export const artic_shift = {
                 let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
                     .then(resp => resp.status === 200 ? resp.data["ids"] : [])
                     .catch((err) => {
-                        updateStatusLog(`Could not load reddit comments: error: ${err.data}.`, "error");
+                        let errorMsg = err?.response?.data || "unknown error";
+                        console.error(err);
+                        updateStatusLog(`Could not load reddit comments: error: ${errorMsg}.`, "error");
+                        return null;
                     });
 
                 deletedIdsPromise.then(deletedIds => {
+                    if (!deletedIds) return; // Only run if not failed
                     const arcticIds = new Set(comments.map(c => c.data.id));
                     const deletedIdsSet = new Set(deletedIds);
                     // Find IDs only in one list
@@ -259,7 +268,6 @@ export const artic_shift = {
                     onlyInArctic.forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
-                            // Mark the outer post div as red
                             let postDiv = el.closest('.post');
                             if (postDiv) postDiv.classList.add('comment-red');
                         }
