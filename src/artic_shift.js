@@ -3,6 +3,8 @@ const moment = require("moment");
 const marked = require("marked");
 import { updateStatusLog } from "./subreddit";
 
+const backendUrl = "https://ihsoy.com";
+
 const add_to_url = (query, param_text, value) => {
     if (value !== undefined && value?.length > 0) {
         query.push(`${param_text}=${value}`)
@@ -201,7 +203,7 @@ export const artic_shift = {
      * @param {string} highlight
      * @param {object} subreddit
      */
-    grab_comments(id, highlight, subreddit) {
+    async grab_comments(id, highlight, subreddit) {
         const submission_url = `${this.base_url}${this.singular_submission}?ids=${id}`;
         updateStatusLog(`Grabbing Submission by ID from Arctic_shift: ${id}`, "loading");
 
@@ -217,11 +219,27 @@ export const artic_shift = {
             updateStatusLog(`Error grabbing submission by ID from Arctic_shift: ${errorMsg}`, "error");
         });
 
+        // Fetch comments from reddit api
+        let highlightIds = [];
+        try {
+            updateStatusLog(`Fetching available comment IDs from reddit api for post: ${id}`, "loading");
+            const resp = await axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 });
+            if (resp.status === 200) {
+                highlightIds = resp.data; // Expecting an array of comment IDs
+                updateStatusLog(`Successfully fetched available comment IDs from reddit api for post: ${id}`, "success");
+            } else {
+                updateStatusLog(`Unexpected response status (${resp.status}) from reddit api for post: ${id}`, "error");
+            }
+        } catch (err) {
+            highlightIds = [];
+            updateStatusLog(`Error fetching available comment IDs from reddit api for post: ${id}: ${err.message}`, "error");
+        }
+
         const comment_tree = `${this.base_url}${this.comments_tree_end_point}?link_id=${id}&limit=9999`;
         updateStatusLog(`Grabbing comment tree from Arctic_shift for submission ID: ${id}`, "loading");
         axios.get(comment_tree).then(e => {
             e.data.data.forEach(comment => {
-                this.handle_comment(comment, subreddit, `t3_${id}`, highlight);
+                this.handle_comment(comment, subreddit, `t3_${id}`, highlight, highlightIds);
             });
             if (highlight !== null) {
                 const el = document.getElementById(highlight);
@@ -241,20 +259,27 @@ export const artic_shift = {
      * @param {string} parent
      * @param {string} highlight
      */
-    handle_comment(comment, subreddit, parent, highlight) {
+    handle_comment(comment, subreddit, parent, highlight, IDsOfRedditComments = []) {
+        // Traverse all comments in the tree (no further requests)
         let queue = [comment];
         const childrenMap = {};
         while (queue.length > 0) {
             this.comments_count++;
             let currentComment = queue.shift();
             const data = currentComment.data;
+            let colorClass = "";
+            if (IDsOfRedditComments.length > 0) {
+                if (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body)) {
+                    colorClass = "comment-red";
+                }
+            }
             let tpl_data = {
                 "id": data.id,
                 "author": data.author,
                 "score": data.score,
                 "time": moment.unix(data.created_utc).format("llll"),
                 "body": data.body,
-                "postClass": data.id === highlight ? "post_highlight" : "post"
+                "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
             };
             if (!childrenMap[data.parent_id]) childrenMap[data.parent_id] = [];
             const tempDiv = document.createElement('div');

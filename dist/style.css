@@ -315,3 +315,11 @@ input:checked + .slider:before {
   align-items: center !important;
   float: right !important;
 }
+.comment-green {
+  background-color: #b6e7b6 !important;
+  border: solid 2px #2e8b57 !important;
+}
+.comment-red {
+  background-color: #f7b6b6 !important;
+  border: solid 2px #b22222 !important;
+}
