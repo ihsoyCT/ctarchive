@@ -3,7 +3,7 @@ const moment = require("moment");
 const marked = require("marked");
 import { updateStatusLog } from "./subreddit";
 
-const backendUrl = "https://ihsoy.com";
+const backendUrl = "http://ihsoy.com"; // Change to your backend URL
 
 const add_to_url = (query, param_text, value) => {
     if (value !== undefined && value?.length > 0) {
@@ -207,7 +207,7 @@ export const artic_shift = {
         const submission_url = `${this.base_url}${this.singular_submission}?ids=${id}`;
         updateStatusLog(`Grabbing Submission by ID from Arctic_shift: ${id}`, "loading");
 
-        document.getElementById("comments").innerHTML=`<div id=t3_${id}></div>`
+        document.getElementById("comments").innerHTML = `<div id=t3_${id}></div>`;
         axios.get(submission_url).then((e) => {
             e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
             e.data.data[0].selftext = marked.parse(e.data.data[0].selftext);
@@ -219,36 +219,60 @@ export const artic_shift = {
             updateStatusLog(`Error grabbing submission by ID from Arctic_shift: ${errorMsg}`, "error");
         });
 
-        // Fetch comments from reddit api
-        let highlightIds = [];
-        try {
-            updateStatusLog(`Fetching available comment IDs from reddit api for post: ${id}`, "loading");
-            const resp = await axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 });
-            if (resp.status === 200) {
-                highlightIds = resp.data; // Expecting an array of comment IDs
-                updateStatusLog(`Successfully fetched available comment IDs from reddit api for post: ${id}`, "success");
-            } else {
-                updateStatusLog(`Unexpected response status (${resp.status}) from reddit api for post: ${id}`, "error");
-            }
-        } catch (err) {
-            highlightIds = [];
-            updateStatusLog(`Error fetching available comment IDs from reddit api for post: ${id}: ${err.message}`, "error");
-        }
+        // Start both requests asynchronously
+        let arcticCommentsPromise = axios.get(`${this.base_url}${this.comments_tree_end_point}?link_id=${id}&limit=9999`)
+            .then(e => e.data.data)
+            .catch(() => []);
 
-        const comment_tree = `${this.base_url}${this.comments_tree_end_point}?link_id=${id}&limit=9999`;
-        updateStatusLog(`Grabbing comment tree from Arctic_shift for submission ID: ${id}`, "loading");
-        axios.get(comment_tree).then(e => {
-            e.data.data.forEach(comment => {
-                this.handle_comment(comment, subreddit, `t3_${id}`, highlight, highlightIds);
+        // Display comments as soon as Arctic Shift returns
+        arcticCommentsPromise.then(comments => {
+            comments.forEach(comment => {
+                this.handle_comment(comment, subreddit, `t3_${id}`, highlight, [], "");
             });
             if (highlight !== null) {
                 const el = document.getElementById(highlight);
                 if (el) el.scrollIntoView();
             }
-            updateStatusLog(`Done grabbing comment tree from Arctic_shift for submission ID: ${id}`, "success");
-        }).catch((error) => {
-            let errorMsg = error?.response?.data?.error || error.message;
-            updateStatusLog(`Error grabbing comment tree from Arctic_shift for submission ID: ${id}: ${errorMsg}`, "error");
+            updateStatusLog(`Done loading comments from Arctic_shift.`, "success");
+
+            if (true) {
+                console.log(this.comments_count);
+                if(this.comments_count > 2000) {
+                    updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
+                    return;
+                }
+                let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
+                    .then(resp => resp.status === 200 ? resp.data["ids"] : [])
+                    .catch(() => []);
+
+                deletedIdsPromise.then(deletedIds => {
+                    const arcticIds = new Set(comments.map(c => c.data.id));
+                    const deletedIdsSet = new Set(deletedIds);
+                    // Find IDs only in one list
+                    const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
+                    const onlyInDeleted = [...deletedIdsSet].filter(x => !arcticIds.has(x));
+                    // Mark comments only in one list as red
+                    onlyInArctic.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            // Mark the outer post div as red
+                            let postDiv = el.closest('.post');
+                            if (postDiv) postDiv.classList.add('comment-red');
+                        }
+                    });
+                    // Also mark deleted/removed bodies
+                    comments.forEach(comment => {
+                        if (["[deleted]", "[removed]"].includes(comment.data.body)) {
+                            const el = document.getElementById(comment.data.id);
+                            if (el) {
+                                let postDiv = el.closest('.post');
+                                if (postDiv) postDiv.classList.add('comment-red');
+                            }
+                        }
+                    });
+                    updateStatusLog(`Done marking deleted comments.`, "success");
+                });
+            }
         });
     },
     comments_count: 0,
@@ -263,6 +287,7 @@ export const artic_shift = {
         // Traverse all comments in the tree (no further requests)
         let queue = [comment];
         const childrenMap = {};
+        console.log(`Processing comment tree for parent: ${parent}, highlight: ${highlight}, IDsOfRedditComments: ${IDsOfRedditComments.length}`);
         while (queue.length > 0) {
             this.comments_count++;
             let currentComment = queue.shift();
