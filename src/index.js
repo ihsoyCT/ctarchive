@@ -203,6 +203,6 @@ window.handleSearchFormSubmit = function(e) {
   const mode = form.elements['mode'] ? form.elements['mode'].value : undefined;
   if (mode) params.set('mode', mode);
   // Reload page with new params
-  window.location.search = '?' + params.toString();
+  window.location.href = '/?' + params.toString();
   return false;
 }
