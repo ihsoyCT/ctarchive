@@ -3,7 +3,7 @@ const moment = require("moment");
 const marked = require("marked");
 
 import { artic_shift } from "./artic_shift";
-import { pushpull } from "./pushpull";
+import { pullpush } from "./pullpush";
 
 /**
  * Enum for supported backends.
@@ -11,7 +11,7 @@ import { pushpull } from "./pushpull";
  * @enum {number}
  */
 export const Backends = Object.freeze({
-  PUSHPULL: 0,
+  PULLPUSH: 0,
   ARTIC_SHIFT: 1
 });
 
@@ -73,8 +73,8 @@ export const subreddit = {
    */
   grabSubmissions(urlParams) {
     switch (subreddit.backend) {
-      case Backends.PUSHPULL:
-        pushpull.get_submissions(urlParams, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.get_submissions(urlParams, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.get_submissions(urlParams, subreddit);
@@ -88,8 +88,8 @@ export const subreddit = {
    */
   grabComments(id, highlight) {
     switch (subreddit.backend) {
-      case Backends.PUSHPULL:
-        pushpull.grab_comments(id, highlight, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.grab_comments(id, highlight, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.grab_comments(id, highlight, subreddit)
@@ -111,8 +111,8 @@ export const subreddit = {
    */
   searchComments(urlParams) {
     switch (this.backend) {
-      case Backends.PUSHPULL:
-        pushpull.search_comments(urlParams, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.search_comments(urlParams, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.search_comments(urlParams, subreddit)
@@ -161,15 +161,28 @@ export const subreddit = {
  * Update the status log UI with a message and type.
  * @param {string} message
  * @param {"info"|"loading"|"success"|"error"} [type="info"]
+ * @param {boolean} [inPlace=false] Whether to update the last message instead of adding a new one
  */
-function updateStatusLog(message, type = "info") {
+function updateStatusLog(message, type = "info", inPlace = false) {
   const errorDiv = document.getElementById("error");
   if (!errorDiv) return;
+
+  // If updating in place and there's a previous loading message, update it
+  if (inPlace && type === "loading") {
+    const lastMessage = errorDiv.lastElementChild;
+    if (lastMessage && lastMessage.querySelector('.status-icon.spinner')) {
+      const icon = lastMessage.querySelector('.status-icon.spinner').outerHTML;
+      lastMessage.innerHTML = icon + message;
+      return;
+    }
+  }
+
   // Remove previous spinner if present
   if (type === "success" || type === "error") {
     const spinners = errorDiv.querySelectorAll('.status-icon.spinner');
     spinners.forEach(spinner => spinner.parentElement && spinner.parentElement.remove());
   }
+
   // Toggle red background for error only if error, remove otherwise
   if (type === "error") {
     errorDiv.classList.add("error-active");

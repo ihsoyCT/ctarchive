@@ -2,9 +2,9 @@ div(class='post')
     p(class='comment_title') #{permalink}
     p(class='comment_user')
         a(href='https://reddit.com/user/' + author) #{author} 
-        a(href='/index.html?mode=submissions&subreddit=&author=' + author) Submissions 
-        a(href='/index.html?mode=comments&author=' + author) Comments 
+        a(href='/index.html?mode=submissions&subreddit=&author=' + author + '&backend=' + window.currentBackend) Submissions 
+        a(href='/index.html?mode=comments&author=' + author + '&backend=' + window.currentBackend) Comments 
         | - Score: #{score} at #{time}
     p !{body}
     div(class='post_navigation')
-        a(href='/index.html?comments=' + link_id + '&id=' + id) Context
+        a(href='/index.html?comments=' + link_id + '&id=' + id + '&backend=' + window.currentBackend) Context
