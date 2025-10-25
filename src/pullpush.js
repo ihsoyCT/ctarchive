@@ -9,6 +9,37 @@ const backendUrl = "https://ihsoy.com";
  * Pullpush backend logic for Reddit archive search.
  * @namespace pullpush
  */
+// Cache for compiled templates
+const templateCache = new Map();
+
+// Get or create compiled template
+const getCompiledTemplate = (template, data) => {
+  const key = JSON.stringify(data);
+  if (!templateCache.has(key)) {
+    templateCache.set(key, template(data));
+  }
+  return templateCache.get(key);
+};
+
+// Batch rendering constants
+const BATCH_SIZE = 100;
+
+function renderInBatches(comments, processFunction) {
+  let index = 0;
+  
+  function processBatch() {
+    const batch = comments.slice(index, index + BATCH_SIZE);
+    batch.forEach(processFunction);
+    index += BATCH_SIZE;
+    
+    if (index < comments.length) {
+      requestAnimationFrame(processBatch);
+    }
+  }
+  
+  requestAnimationFrame(processBatch);
+}
+
 const pullpush = {
   link: {
     submission: "https://api.pullpush.io/reddit/search/submission/?test",
@@ -89,7 +120,7 @@ const pullpush = {
         }
 
         allComments = allComments.concat(comments);
-        updateStatusLog(`Loaded ${allComments.length} comments...`, "loading");
+        updateStatusLog(`Loading comments... (${allComments.length} loaded)`, "loading", true);  // true flag for updating in place
       } catch (err) {
         updateStatusLog(`Error loading comments page: ${err.message}`, "error");
         hasMore = false;
@@ -98,9 +129,8 @@ const pullpush = {
 
     // Process all collected comments
     if (allComments.length > 0) {
-      allComments.slice().reverse().forEach(comment => {
-        this.handle_comment(comment, subreddit, `t3_${id}`, highlight, [], "");
-      });
+      // Use batch processing for better performance
+      this.handle_comments_batch(allComments, subreddit, `t3_${id}`, highlight, []);
 
       if (highlight !== null) {
         const el = document.getElementById(highlight);
@@ -172,36 +202,66 @@ const pullpush = {
    * @param {string} parent
    * @param {string} highlight
    */
-  handle_comment(comment, subreddit, parent, highlight, IDsOfRedditComments = []) {
-    // Traverse all comments in the tree (no further requests)
-    const data = comment;
-    console.log(`Processing comment tree for parent: ${parent}, highlight: ${highlight}, IDsOfRedditComments: ${IDsOfRedditComments.length}`);
+  handle_comments_batch(comments, subreddit, parentId, highlight, IDsOfRedditComments = []) {
+    // Build comment tree structure first
+    const commentMap = new Map();
+    const rootComments = [];
+    
+    // First pass - create map
+    comments.forEach(comment => {
+      commentMap.set(comment.id, {
+        data: comment,
+        children: []
+      });
+    });
 
-    let colorClass = "";
-    if (IDsOfRedditComments.length > 0) {
-      if (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body)) {
-        colorClass = "comment-red";
+    // Second pass - build tree
+    comments.forEach(comment => {
+      const node = commentMap.get(comment.id);
+      const parentNode = commentMap.get(comment.parent_id?.split('_')[1]);
+      if (parentNode) {
+        parentNode.children.push(node);
+      } else {
+        rootComments.push(node);
       }
-    }
-    let tpl_data = {
-      "id": data.id,
-      "author": data.author,
-      "score": data.score,
-      "time": moment.unix(data.created_utc).format("llll"),
-      "body": data.body,
-      "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
-    };
-    console.log(`Rendering comment ID: ${data.id} under parent: ${data.parent_id}`);
-    console.log(document.getElementById(data.parent_id));
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = subreddit.template.postCompiled(tpl_data);
+    });
 
-    if (document.getElementById(data.parent_id) !== null) {
-      document.getElementById(data.parent_id).appendChild(tempDiv);
-    } else {
-      document.getElementById("orphans").appendChild(tempDiv);
-      console.warn(`Parent ID: ${data.parent_id} not found for comment ID: ${data.id}`);
-    }
+    // Create fragment for batch DOM insertion
+    const frag = document.createDocumentFragment();
+    
+    // Recursive render function
+    const renderComment = (node, parentElement) => {
+      const data = node.data;
+      const colorClass = IDsOfRedditComments.length > 0 && 
+        (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body))
+        ? "comment-red"
+        : "";
+
+      const tpl_data = {
+        "id": data.id,
+        "author": data.author,
+        "score": data.score,
+        "time": moment.unix(data.created_utc).format("llll"),
+        "body": data.body,
+        "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
+      };
+
+      const commentDiv = document.createElement("div");
+      commentDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, tpl_data);
+      const commentElement = commentDiv.firstElementChild;
+      
+      // Render all children
+      node.children.forEach(child => renderComment(child, commentElement));
+      
+      parentElement.appendChild(commentElement);
+    };
+
+    // Render the tree
+    rootComments.forEach(root => renderComment(root, frag));
+
+    // Single DOM insertion
+    const container = document.getElementById(parentId) || document.getElementById("orphans");
+    container.appendChild(frag);
   },
 
   /**
@@ -248,12 +308,18 @@ const pullpush = {
     try {
       const response = await axios.get(url);
       const comments = response.data.data;
+      // Process comments in batches for better performance
+      const processedComments = comments.map(comment => ({
+        ...comment,
+        time: moment.unix(comment.created_utc).format("llll"),
+        body: marked.parse(comment.body)
+      }));
+      
+      // Use batch processing
       const frag = document.createDocumentFragment();
-      comments.forEach((comment) => {
-        comment.time = moment.unix(comment.created_utc).format("llll");
-        comment.body = marked.parse(comment.body);
+      renderInBatches(processedComments, comment => {
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = subreddit.template.postCompiled(comment);
+        tempDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, comment);
         frag.appendChild(tempDiv.firstElementChild);
       });
       subreddit.$el.appendChild(frag);

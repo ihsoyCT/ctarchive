@@ -161,15 +161,28 @@ export const subreddit = {
  * Update the status log UI with a message and type.
  * @param {string} message
  * @param {"info"|"loading"|"success"|"error"} [type="info"]
+ * @param {boolean} [inPlace=false] Whether to update the last message instead of adding a new one
  */
-function updateStatusLog(message, type = "info") {
+function updateStatusLog(message, type = "info", inPlace = false) {
   const errorDiv = document.getElementById("error");
   if (!errorDiv) return;
+
+  // If updating in place and there's a previous loading message, update it
+  if (inPlace && type === "loading") {
+    const lastMessage = errorDiv.lastElementChild;
+    if (lastMessage && lastMessage.querySelector('.status-icon.spinner')) {
+      const icon = lastMessage.querySelector('.status-icon.spinner').outerHTML;
+      lastMessage.innerHTML = icon + message;
+      return;
+    }
+  }
+
   // Remove previous spinner if present
   if (type === "success" || type === "error") {
     const spinners = errorDiv.querySelectorAll('.status-icon.spinner');
     spinners.forEach(spinner => spinner.parentElement && spinner.parentElement.remove());
   }
+
   // Toggle red background for error only if error, remove otherwise
   if (type === "error") {
     errorDiv.classList.add("error-active");
