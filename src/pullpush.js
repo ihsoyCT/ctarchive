@@ -52,9 +52,44 @@ const pullpush = {
    * @param {object} subreddit
    */
   get_submissions(urlParams, subreddit) {
-    const request = subreddit.createRequest(urlParams);
-    const url = this.link.submission + "&" + request;
-    updateStatusLog(`Grabbing Submissions from Pullpush with params: ${urlParams.toString()}`, "loading");
+    // Create a new URLSearchParams to modify without affecting the original
+    const params = new URLSearchParams();
+    
+    const sortType = urlParams.get('sort_type') || 'created_utc';
+    
+    // Copy all parameters except those that need special handling
+    urlParams.forEach((value, key) => {
+      if (!['before', 'after', 'score'].includes(key)) {
+        params.append(key, value);
+      }
+    });
+
+    if (sortType === 'score') {
+      // Handle score-based pagination
+      const score = urlParams.get('score');
+      if (score) {
+        params.append('score', score);
+      }
+    } else {
+      // Handle before/after timestamps
+      const before = urlParams.get('before');
+      const after = urlParams.get('after');
+      
+      if (before) {
+        // If it's already a Unix timestamp, use it as is
+        const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
+        params.append('before', beforeTimestamp);
+      }
+      
+      if (after) {
+        // If it's already a Unix timestamp, use it as is
+        const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
+        params.append('after', afterTimestamp);
+      }
+    }
+
+    const url = this.link.submission + "&" + params.toString();
+    updateStatusLog(`Grabbing Submissions from Pullpush with params: ${params.toString()}`, "loading");
     axios
       .get(url)
       .then((e) => {
@@ -70,6 +105,7 @@ const pullpush = {
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done grabbing submissions from Pullpush`, "success");
+        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
       })
       .catch((e) => {
         updateStatusLog(`Error grabbing submissions from Pullpush: ${e.message}`, "error");
@@ -270,9 +306,34 @@ const pullpush = {
    * @param {object} subreddit
    */
   search_comments(urlParams, subreddit) {
-    const request = subreddit.createRequest(urlParams);
-    const url = this.link.commentSearch + "&" + request;
-    updateStatusLog(`Searching comments from Pullpush with params: ${urlParams.toString()}`, "loading");
+    // Create a new URLSearchParams to modify without affecting the original
+    const params = new URLSearchParams();
+    
+    // Copy all parameters except before/after which need special handling
+    urlParams.forEach((value, key) => {
+      if (key !== 'before' && key !== 'after') {
+        params.append(key, value);
+      }
+    });
+
+    // Handle before/after timestamps
+    const before = urlParams.get('before');
+    const after = urlParams.get('after');
+    
+    if (before) {
+      // If it's already a Unix timestamp, use it as is
+      const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
+      params.append('before', beforeTimestamp);
+    }
+    
+    if (after) {
+      // If it's already a Unix timestamp, use it as is
+      const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
+      params.append('after', afterTimestamp);
+    }
+
+    const url = this.link.commentSearch + "&" + params.toString();
+    updateStatusLog(`Searching comments from Pullpush with params: ${params.toString()}`, "loading");
     axios
       .get(url)
       .then((e) => {
@@ -289,6 +350,7 @@ const pullpush = {
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done searching comments from Pullpush`, "success");
+        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
       })
       .catch((e) => {
         updateStatusLog(`Error searching comments from Pullpush: ${e.message}`, "error");
@@ -334,6 +396,86 @@ const pullpush = {
   },
 };
 
+function addPaginationLinks({ data, urlParams, container }) {
+  if (!data || data.length === 0) return;
+  const sortOrder = urlParams.get('sort') || 'desc';
+  const sortType = urlParams.get('sort_type') || 'created_utc';
+  
+  // Next Page (Older/Younger Posts)
+  const nextLink = document.createElement('a');
+  nextLink.className = 'pagination-link';
+
+  // Previous Page (Newer/Older Posts)
+  const prevLink = document.createElement('a');
+  prevLink.className = 'pagination-link';
+
+  if (sortType === 'score') {
+    // Score-based pagination
+    const firstScore = data[0].score;
+    const lastScore = data[data.length - 1].score;
+
+    if (sortOrder === 'desc') {
+      // Next: score<lastScore (lower scores)
+      nextLink.textContent = '>>';
+      const urlParamsNext = new URLSearchParams(window.location.search);
+      urlParamsNext.set('score', `<${lastScore}`);
+      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
+      // Previous: score>firstScore (higher scores)
+      prevLink.textContent = '<<';
+      const urlParamsPrev = new URLSearchParams(window.location.search);
+      urlParamsPrev.set('score', `>${firstScore}`);
+      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
+    } else {
+      // Next: score>lastScore (higher scores)
+      nextLink.textContent = '>>';
+      const urlParamsNext = new URLSearchParams(window.location.search);
+      urlParamsNext.set('score', `>${lastScore}`);
+      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
+      // Previous: score<firstScore (lower scores)
+      prevLink.textContent = '<<';
+      const urlParamsPrev = new URLSearchParams(window.location.search);
+      urlParamsPrev.set('score', `<${firstScore}`);
+      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
+    }
+  } else {
+    // Time-based pagination
+    const firstCreatedUtc = data[0].created_utc;
+    const lastCreatedUtc = data[data.length - 1].created_utc;
+
+    if (sortOrder === 'desc') {
+      // Next: before=lastCreatedUtc (older)
+      nextLink.textContent = '>>';
+      const urlParamsNext = new URLSearchParams(window.location.search);
+      urlParamsNext.set('before', lastCreatedUtc);
+      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
+      // Previous: after=firstCreatedUtc (newer)
+      prevLink.textContent = '<<';
+      const urlParamsPrev = new URLSearchParams(window.location.search);
+      urlParamsPrev.set('after', firstCreatedUtc);
+      urlParamsPrev.delete('before');
+      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
+    } else {
+      // Next: after=lastCreatedUtc (newer)
+      nextLink.textContent = '>>';
+      const urlParamsNext = new URLSearchParams(window.location.search);
+      urlParamsNext.set('after', lastCreatedUtc);
+      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
+      // Previous: before=firstCreatedUtc (older)
+      prevLink.textContent = '<<';
+      const urlParamsPrev = new URLSearchParams(window.location.search);
+      urlParamsPrev.set('before', firstCreatedUtc);
+      urlParamsPrev.delete('after');
+      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
+    }
+  }
+  // Clear container and center links
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pagination-container';
+  wrapper.appendChild(prevLink);
+  wrapper.appendChild(nextLink);
+  container.appendChild(wrapper);
+}
 
 function normalize_url(url) {
   return url.replace(/&amp;/g, "&");
@@ -341,7 +483,8 @@ function normalize_url(url) {
 
 function set_thumbmail(sub) {
   const imagetypes = ["jpg", "png", "gif", "jpeg"];
-  if (imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = normalize_url(sub.url);
+  
+  if (sub?.url && imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = normalize_url(sub.url);
 
   // If preview exists, collect all images[].source.url into sub.previews
   if (sub.preview && Array.isArray(sub.preview.images)) {
