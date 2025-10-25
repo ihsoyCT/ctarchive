@@ -1,5 +1,5 @@
 import { subreddit, Backends } from "./subreddit";
-import pushpullSearchTemplate from "./templates/pushpull_search.pug";
+import pullpushSearchTemplate from "./templates/pullpush_search.pug";
 import arcticShiftSearchTemplate from "./templates/arctic_shift_search.pug";
 
 /**
@@ -8,8 +8,8 @@ import arcticShiftSearchTemplate from "./templates/arctic_shift_search.pug";
  */
 function renderSearchForm(backend) {
   const searchformDiv = document.getElementById("searchform");
-  if (backend === "pushpull") {
-    searchformDiv.innerHTML = pushpullSearchTemplate();
+  if (backend === "pullpush") {
+    searchformDiv.innerHTML = pullpushSearchTemplate();
   } else if (backend === "artic_shift") {
     searchformDiv.innerHTML = arcticShiftSearchTemplate();
     setTimeout(() => {
@@ -25,10 +25,14 @@ window.onload = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
   let backend = urlParams.get("backend") || "artic_shift";
+  if(backend === "pushpull") {
+    backend = "pullpush";
+  }
+  window.currentBackend = backend;
   renderSearchForm(backend);
   urlParams.delete("backend");
-  if (backend === "pushpull") {
-    subreddit.backend = Backends.PUSHPULL;
+  if (backend === "pullpush") {
+    subreddit.backend = Backends.PULLPUSH;
   } else if (backend === "artic_shift") {
     subreddit.backend = Backends.ARTIC_SHIFT;
   }
@@ -108,8 +112,8 @@ window.switchBackend = function (newBackend) {
 
   // Field mapping and conversion
   let mappedValues = { ...values };
-  if (newBackend === "pushpull") {
-    // Arctic Shift -> PushPull: query/body -> q, limit 'auto' -> 1000
+  if (newBackend === "pullpush") {
+    // Arctic Shift -> Pullpush: query/body -> q, limit 'auto' -> 1000
     if (mappedValues.query !== undefined && mappedValues.query !== "") {
       mappedValues.q = mappedValues.query;
       delete mappedValues.query;
@@ -121,7 +125,7 @@ window.switchBackend = function (newBackend) {
       mappedValues.limit = "1000";
     }
   } else if (newBackend === "artic_shift") {
-    // PushPull -> Arctic Shift: q -> query and body
+    // Pullpush -> Arctic Shift: q -> query and body
     if (mappedValues.q !== undefined) {
       mappedValues.query = mappedValues.q;
       mappedValues.body = mappedValues.q;

@@ -3,7 +3,7 @@ const moment = require("moment");
 const marked = require("marked");
 
 import { artic_shift } from "./artic_shift";
-import { pushpull } from "./pushpull";
+import { pullpush } from "./pullpush";
 
 /**
  * Enum for supported backends.
@@ -11,7 +11,7 @@ import { pushpull } from "./pushpull";
  * @enum {number}
  */
 export const Backends = Object.freeze({
-  PUSHPULL: 0,
+  PULLPUSH: 0,
   ARTIC_SHIFT: 1
 });
 
@@ -73,8 +73,8 @@ export const subreddit = {
    */
   grabSubmissions(urlParams) {
     switch (subreddit.backend) {
-      case Backends.PUSHPULL:
-        pushpull.get_submissions(urlParams, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.get_submissions(urlParams, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.get_submissions(urlParams, subreddit);
@@ -88,8 +88,8 @@ export const subreddit = {
    */
   grabComments(id, highlight) {
     switch (subreddit.backend) {
-      case Backends.PUSHPULL:
-        pushpull.grab_comments(id, highlight, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.grab_comments(id, highlight, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.grab_comments(id, highlight, subreddit)
@@ -111,8 +111,8 @@ export const subreddit = {
    */
   searchComments(urlParams) {
     switch (this.backend) {
-      case Backends.PUSHPULL:
-        pushpull.search_comments(urlParams, subreddit);
+      case Backends.PULLPUSH:
+        pullpush.search_comments(urlParams, subreddit);
         break;
       case Backends.ARTIC_SHIFT:
         artic_shift.search_comments(urlParams, subreddit)

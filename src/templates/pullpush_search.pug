@@ -1,11 +1,11 @@
-//- PushPull Search Form Template
+//- Pullpush Search Form Template
 form(id="search_form" onsubmit="return window.handleSearchFormSubmit(event)")
   .searchFlex
     label(for="backend")
       span.label Backend
       select(id="backend" name="backend" onchange="window.switchBackend && window.switchBackend(this.value)")
         option(value="artic_shift") Arctic Shift
-        option(value="pushpull" selected) PushPull
+        option(value="pullpush" selected) Pullpush
     label(for="mode")
       span.label Comments/Submissions
       select(id="mode" name="mode")

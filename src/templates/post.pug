@@ -1,8 +1,8 @@
 div(class=postClass)
     p(class='comment_title', id=id)
         a(href='https://reddit.com/user/' + author) #{author} 
-        a(href='/index.html?mode=submissions&subreddit=&author=' + author) Submissions 
-        a(href='/index.html?mode=comments&author=' + author) Comments 
+        a(href='/index.html?mode=submissions&subreddit=&author=' + author + '&backend=' + window.currentBackend) Submissions 
+        a(href='/index.html?mode=comments&author=' + author + '&backend=' + window.currentBackend) Comments 
         | - Score: #{score} at #{time}
     p !{body}
     div(class='children', id='t1_' + id)
