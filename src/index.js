@@ -198,7 +198,7 @@ window.handleSearchFormSubmit = function(e) {
     // For checkboxes/radios, only add if checked
     if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
     if (el.value !== undefined && el.value !== null && el.value !== '') {
-      params.append(el.name, el.value);
+      params.append(el.name, el.value.trim());
     }
   });
   // Add backend and mode if present
