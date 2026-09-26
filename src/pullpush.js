@@ -2,6 +2,44 @@ import { updateStatusLog } from "./subreddit";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const axios = require("axios").default;
 import { formatTime } from "./time";
+import { addPaginationLinks, inDisplayOrder, pageRequest, withoutSkipped } from "./pagination";
+
+// Pagination follows the sort field (created_utc, score or num_comments)
+const paginationFor = (urlParams) => ({
+  sortOrder: urlParams.get("sort"),
+  sortKey: urlParams.get("sort_type") || "created_utc",
+  container: document.getElementById("paginate"),
+});
+
+// Pullpush wants epoch seconds. Dates from the search form are datetime-local
+// strings in the viewer's time zone; cursor values are already epoch seconds.
+function toEpoch(value) {
+  if (!value) return null;
+  if (/^\d+$/.test(value)) return value;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? null : String(Math.floor(ms / 1000));
+}
+
+// API parameters for a submission or comment search
+function apiParams(urlParams) {
+  const sortKey = urlParams.get("sort_type") || "created_utc";
+  const page = pageRequest(urlParams, { maxLimit: 1000, sortKey });
+  const params = new URLSearchParams();
+  urlParams.forEach((value, key) => {
+    if (!["before", "after", "sort", "limit", "skip", "cursor", "page"].includes(key)) {
+      params.append(key, value);
+    }
+  });
+  params.set("sort", page.sort);
+  if (page.limit) params.set("limit", page.limit);
+  const before = toEpoch(page.before);
+  const after = toEpoch(page.after);
+  if (before) params.set("before", before);
+  if (after) params.set("after", after);
+  // While paging by score/num_comments the cursor replaces that form filter
+  if (page.sortFilter) params.set(sortKey, page.sortFilter);
+  return params;
+}
 
 const backendUrl = "https://ihsoy.com";
 
@@ -21,42 +59,7 @@ const pullpush = {
    * @param {object} subreddit
    */
   get_submissions(urlParams, subreddit) {
-    // Create a new URLSearchParams to modify without affecting the original
-    const params = new URLSearchParams();
-    
-    const sortType = urlParams.get('sort_type') || 'created_utc';
-    
-    // Copy all parameters except those that need special handling
-    urlParams.forEach((value, key) => {
-      if (!['before', 'after', 'score'].includes(key)) {
-        params.append(key, value);
-      }
-    });
-
-    if (sortType === 'score') {
-      // Handle score-based pagination
-      const score = urlParams.get('score');
-      if (score) {
-        params.append('score', score);
-      }
-    } else {
-      // Handle before/after timestamps
-      const before = urlParams.get('before');
-      const after = urlParams.get('after');
-      
-      if (before) {
-        // If it's already a Unix timestamp, use it as is
-        const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
-        params.append('before', beforeTimestamp);
-      }
-      
-      if (after) {
-        // If it's already a Unix timestamp, use it as is
-        const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
-        params.append('after', afterTimestamp);
-      }
-    }
-
+    const params = apiParams(urlParams);
     const url = this.link.submission + "&" + params.toString();
     updateStatusLog(`Grabbing Submissions from Pullpush with params: ${params.toString()}`, "loading");
     axios
@@ -64,7 +67,9 @@ const pullpush = {
       .then((e) => {
         subreddit.$el.innerHTML = "";
         const frag = document.createDocumentFragment();
-        e.data.data.forEach((sub) => {
+        const items = inDisplayOrder(e.data.data, urlParams);
+        const shown = withoutSkipped(items, urlParams);
+        shown.forEach((sub) => {
           sub.time = formatTime(sub.created_utc);
           set_thumbmail(sub);
           const tempDiv = document.createElement('div');
@@ -73,7 +78,7 @@ const pullpush = {
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done grabbing submissions from Pullpush`, "success");
-        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
+        addPaginationLinks({ data: shown, ...paginationFor(urlParams) });
       })
       .catch((e) => {
         updateStatusLog(`Error grabbing submissions from Pullpush: ${e.message}`, "error");
@@ -277,31 +282,7 @@ const pullpush = {
    * @param {object} subreddit
    */
   search_comments(urlParams, subreddit) {
-    // Create a new URLSearchParams to modify without affecting the original
-    const params = new URLSearchParams();
-    
-    // Copy all parameters except before/after which need special handling
-    urlParams.forEach((value, key) => {
-      if (key !== 'before' && key !== 'after') {
-        params.append(key, value);
-      }
-    });
-
-    // Handle before/after timestamps
-    const before = urlParams.get('before');
-    const after = urlParams.get('after');
-    
-    if (before) {
-      // If it's already a Unix timestamp, use it as is
-      const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
-      params.append('before', beforeTimestamp);
-    }
-    
-    if (after) {
-      // If it's already a Unix timestamp, use it as is
-      const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
-      params.append('after', afterTimestamp);
-    }
+    const params = apiParams(urlParams);
 
     const url = this.link.commentSearch + "&" + params.toString();
     updateStatusLog(`Searching comments from Pullpush with params: ${params.toString()}`, "loading");
@@ -310,7 +291,9 @@ const pullpush = {
       .then((e) => {
         subreddit.$el.innerHTML = "";
         const frag = document.createDocumentFragment();
-        e.data.data.forEach((post) => {
+        const items = inDisplayOrder(e.data.data, urlParams);
+        const shown = withoutSkipped(items, urlParams);
+        shown.forEach((post) => {
           post.time = formatTime(post.created_utc);
           post.body = renderMarkdown(post.body);
           post.link_id = post.link_id.split("_").pop();
@@ -320,7 +303,7 @@ const pullpush = {
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done searching comments from Pullpush`, "success");
-        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
+        addPaginationLinks({ data: shown, ...paginationFor(urlParams) });
       })
       .catch((e) => {
         updateStatusLog(`Error searching comments from Pullpush: ${e.message}`, "error");
@@ -328,86 +311,6 @@ const pullpush = {
   },
 };
 
-function addPaginationLinks({ data, urlParams, container }) {
-  if (!data || data.length === 0) return;
-  const sortOrder = urlParams.get('sort') || 'desc';
-  const sortType = urlParams.get('sort_type') || 'created_utc';
-  
-  // Next Page (Older/Younger Posts)
-  const nextLink = document.createElement('a');
-  nextLink.className = 'pagination-link';
-
-  // Previous Page (Newer/Older Posts)
-  const prevLink = document.createElement('a');
-  prevLink.className = 'pagination-link';
-
-  if (sortType === 'score') {
-    // Score-based pagination
-    const firstScore = data[0].score;
-    const lastScore = data[data.length - 1].score;
-
-    if (sortOrder === 'desc') {
-      // Next: score<lastScore (lower scores)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('score', `<${lastScore}`);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: score>firstScore (higher scores)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('score', `>${firstScore}`);
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    } else {
-      // Next: score>lastScore (higher scores)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('score', `>${lastScore}`);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: score<firstScore (lower scores)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('score', `<${firstScore}`);
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }
-  } else {
-    // Time-based pagination
-    const firstCreatedUtc = data[0].created_utc;
-    const lastCreatedUtc = data[data.length - 1].created_utc;
-
-    if (sortOrder === 'desc') {
-      // Next: before=lastCreatedUtc (older)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('before', lastCreatedUtc);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: after=firstCreatedUtc (newer)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('after', firstCreatedUtc);
-      urlParamsPrev.delete('before');
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    } else {
-      // Next: after=lastCreatedUtc (newer)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('after', lastCreatedUtc);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: before=firstCreatedUtc (older)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('before', firstCreatedUtc);
-      urlParamsPrev.delete('after');
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }
-  }
-  // Clear container and center links
-  container.innerHTML = '';
-  const wrapper = document.createElement('div');
-  wrapper.className = 'pagination-container';
-  wrapper.appendChild(prevLink);
-  wrapper.appendChild(nextLink);
-  container.appendChild(wrapper);
-}
 
 function normalize_url(url) {
   return safeUrl(url).replace(/&amp;/g, "&");

@@ -1,5 +1,6 @@
 const axios = require("axios").default;
 import { formatTime } from "./time";
+import { addPaginationLinks, inDisplayOrder, pageRequest, withoutSkipped } from "./pagination";
 import { updateStatusLog } from "./subreddit";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 
@@ -24,52 +25,6 @@ function populateForm(urlParams) {
 }
 
 
-function addPaginationLinks({ data, urlParams, container }) {
-    if (!data || data.length === 0) return;
-    const sortOrder = urlParams.get('sort') || 'desc';
-    const firstCreatedUtc = data[0].created_utc;
-    const lastCreatedUtc = data[data.length - 1].created_utc;
-
-    // Next Page (Older/Younger Posts)
-    const nextLink = document.createElement('a');
-    nextLink.className = 'pagination-link';
-
-    // Previous Page (Newer/Older Posts)
-    const prevLink = document.createElement('a');
-    prevLink.className = 'pagination-link';
-    if (sortOrder === 'desc') {
-        // Next: before=lastCreatedUtc (older)
-        nextLink.textContent = '>>';
-        const urlParamsNext = new URLSearchParams(window.location.search);
-        urlParamsNext.set('before', lastCreatedUtc);
-        nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-        // Previous: after=firstCreatedUtc (newer)
-        prevLink.textContent = '<<';
-        const urlParamsPrev = new URLSearchParams(window.location.search);
-        urlParamsPrev.set('after', firstCreatedUtc);
-        urlParamsPrev.delete('before');
-        prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    } else {
-        // Next: after=lastCreatedUtc (newer)
-        nextLink.textContent = '>>';
-        const urlParamsNext = new URLSearchParams(window.location.search);
-        urlParamsNext.set('after', lastCreatedUtc);
-        nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-        // Previous: before=firstCreatedUtc (older)
-        prevLink.textContent = '<<';
-        const urlParamsPrev = new URLSearchParams(window.location.search);
-        urlParamsPrev.set('before', firstCreatedUtc);
-        urlParamsPrev.delete('after');
-        prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }    // Clear container and center links
-    container.innerHTML = '';
-    const wrapper = document.createElement('div');
-    wrapper.className = 'pagination-container';
-    wrapper.appendChild(prevLink);
-    wrapper.appendChild(nextLink);
-    container.appendChild(wrapper);
-}
-
 /**
  * Arctic Shift backend logic for Reddit archive search.
  * @namespace artic_shift
@@ -88,24 +43,25 @@ export const artic_shift = {
      */
     get_submissions(urlParams, subreddit) {
         let query = [];
+        const page = pageRequest(urlParams, { maxLimit: 100 });
         // Legacy mode: if 'q' is present (even if empty), use it for 'query' and set limit to 'auto', only include relevant params
         if (urlParams.has("q")) {
             add_to_url(query, "subreddit", urlParams.get("subreddit"));
-            add_to_url(query, "sort", urlParams.get("sort"));
-            add_to_url(query, "after", urlParams.get("after"));
-            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "sort", page.sort);
+            add_to_url(query, "after", page.after);
+            add_to_url(query, "before", page.before);
             add_to_url(query, "author", urlParams.get("author"));
             add_to_url(query, "query", urlParams.get("q"));
             add_to_url(query, "limit", "auto");
             populateForm(query)
         } else {
-            add_to_url(query, "sort", urlParams.get("sort"));
-            add_to_url(query, "after", urlParams.get("after"));
-            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "sort", page.sort);
+            add_to_url(query, "after", page.after);
+            add_to_url(query, "before", page.before);
             add_to_url(query, "author", urlParams.get("author"));
             add_to_url(query, "subreddit", urlParams.get("subreddit"));
             add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
-            add_to_url(query, "limit", urlParams.get("limit"));
+            add_to_url(query, "limit", page.limit);
             add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
             add_to_url(query, "over_18", urlParams.get("over_18"));
             add_to_url(query, "spoiler", urlParams.get("spoiler"));
@@ -124,7 +80,9 @@ export const artic_shift = {
             .then((e) => {
                 subreddit.$el.innerHTML = "";
                 const frag = document.createDocumentFragment();
-                e.data.data.forEach((sub) => {
+                const items = inDisplayOrder(e.data.data, urlParams);
+                const shown = withoutSkipped(items, urlParams);
+                shown.forEach((sub) => {
                     sub.time = formatTime(sub.created_utc);
                     set_thumbmail(sub);
                     const tempDiv = document.createElement('div');
@@ -134,7 +92,7 @@ export const artic_shift = {
                 });
                 subreddit.$el.appendChild(frag);
                 updateStatusLog(`Done grabbing submissions from Arctic_shift`, "success");
-                addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
+                addPaginationLinks({ data: shown, sortOrder: urlParams.get('sort'), container: document.getElementById('paginate') });
             })
             .catch((error) => {
                 let errorMsg = error?.response?.data?.error || error.message;
@@ -148,23 +106,24 @@ export const artic_shift = {
      */
     search_comments(urlParams, subreddit) {
         let query = [];
+        const page = pageRequest(urlParams, { maxLimit: 100 });
         if (urlParams.has("q")) {
             add_to_url(query, "subreddit", urlParams.get("subreddit"));
-            add_to_url(query, "sort", urlParams.get("sort"));
-            add_to_url(query, "after", urlParams.get("after"));
-            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "sort", page.sort);
+            add_to_url(query, "after", page.after);
+            add_to_url(query, "before", page.before);
             add_to_url(query, "author", urlParams.get("author"));
             add_to_url(query, "body", urlParams.get("q"));
             add_to_url(query, "limit", "100");
             populateForm(query)
         } else {
-            add_to_url(query, "sort", urlParams.get("sort"));
-            add_to_url(query, "after", urlParams.get("after"));
-            add_to_url(query, "before", urlParams.get("before"));
+            add_to_url(query, "sort", page.sort);
+            add_to_url(query, "after", page.after);
+            add_to_url(query, "before", page.before);
             add_to_url(query, "author", urlParams.get("author"));
             add_to_url(query, "subreddit", urlParams.get("subreddit"));
             add_to_url(query, "author_flair_text", urlParams.get("author_flair_text"));
-            add_to_url(query, "limit", urlParams.get("limit"));
+            add_to_url(query, "limit", page.limit);
             add_to_url(query, "crosspost_parent_id", urlParams.get("crosspost_parent_id"));
             add_to_url(query, "body", urlParams.get("body"));
             add_to_url(query, "link_id", urlParams.get("link_id"));
@@ -176,7 +135,9 @@ export const artic_shift = {
         axios.get(url).then(response => {
             subreddit.$el.innerHTML = "";
             const frag = document.createDocumentFragment();
-            response.data.data.forEach((post) => {
+            const items = inDisplayOrder(response.data.data, urlParams);
+            const shown = withoutSkipped(items, urlParams);
+            shown.forEach((post) => {
                 post.time = formatTime(post.created_utc);
                 post.body = renderMarkdown(post.body);
                 post.link_id = post.link_id.split("_").pop();
@@ -186,7 +147,7 @@ export const artic_shift = {
             });
             subreddit.$el.appendChild(frag);
             updateStatusLog(`Done searching comments from Arctic_shift`, "success");
-            addPaginationLinks({ data: response.data.data, urlParams, container: document.getElementById('paginate') });
+            addPaginationLinks({ data: shown, sortOrder: urlParams.get('sort'), container: document.getElementById('paginate') });
         })
             .catch((error) => {
                 let errorMsg = error?.response?.data?.error || error.message;
