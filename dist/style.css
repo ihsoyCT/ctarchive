@@ -323,6 +323,33 @@ input:checked + .slider:before {
   background-color: #f7b6b6 !important;
   border: solid 2px #b22222 !important;
 }
+.comment-amber {
+  background-color: #fbe3b0 !important;
+  border: solid 2px #c98a00 !important;
+}
+/* Label added by the Reddit status check: "deleted by user", "removed by moderators", ... */
+.comment-status {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 16px;
+  color: #fff;
+  background: #b22222;
+  cursor: help;
+}
+.comment-status-removed,
+.comment-status-removed_by_reddit {
+  background: #6f2da8;
+}
+.comment-status-account_deleted {
+  background: #c98a00;
+}
+.comment-status-unknown {
+  background: #666;
+}
 
 /* Long urls and words in posts must wrap instead of widening the page */
 body {

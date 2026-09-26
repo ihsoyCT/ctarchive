@@ -1,4 +1,5 @@
 import { updateStatusLog } from "./subreddit";
+import { markCommentStatus } from "./comment_status";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const axios = require("axios").default;
 import { formatTime } from "./time";
@@ -40,8 +41,6 @@ function apiParams(urlParams) {
   if (page.sortFilter) params.set(sortKey, page.sortFilter);
   return params;
 }
-
-const backendUrl = "https://ihsoy.com";
 
 /**
  * Pullpush backend logic for Reddit archive search.
@@ -145,7 +144,7 @@ const pullpush = {
     // Process all collected comments
     if (allComments.length > 0) {
       // Use batch processing for better performance
-      this.handle_comments_batch(allComments, subreddit, `t3_${id}`, highlight, []);
+      this.handle_comments_batch(allComments, subreddit, `t3_${id}`, highlight);
 
       if (highlight !== null) {
         const el = document.getElementById(highlight);
@@ -159,50 +158,7 @@ const pullpush = {
         updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
         return;
       }
-      // Only do the deleted check if there are less than 2000 comments
-      if (true) {
-        updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
-        // comments_count is only counted by the Arctic Shift renderer
-        if (allComments.length > 2000) {
-          updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
-          return;
-        }
-        let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
-          .then(resp => resp.status === 200 ? resp.data["ids"] : [])
-          .catch((err) => {
-            let errorMsg = err?.response?.data || "unknown error";
-            console.error(err);
-            updateStatusLog(`Could not load reddit comments: error: ${errorMsg}.`, "error");
-            return null;
-          });
-
-        deletedIdsPromise.then(deletedIds => {
-          if (!deletedIds) return; // Only run if not failed
-          const arcticIds = new Set(allComments.map(c => c.id));
-          const deletedIdsSet = new Set(deletedIds);
-          // Find IDs only in one list
-          const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
-          // Mark comments only in one list as red
-          onlyInArctic.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-              let postDiv = el.closest('.post');
-              if (postDiv) postDiv.classList.add('comment-red');
-            }
-          });
-          // Also mark deleted/removed bodies
-          allComments.forEach(comment => {
-            if (["[deleted]", "[removed]"].includes(comment.body)) {
-              const el = document.getElementById(comment.id);
-              if (el) {
-                let postDiv = el.closest('.post');
-                if (postDiv) postDiv.classList.add('comment-red');
-              }
-            }
-          });
-          updateStatusLog(`Done marking deleted comments.`, "success");
-        });
-      }
+      markCommentStatus(allComments.map((c) => ({ id: c.id, body: c.body })));
     } else {
       updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
     }
@@ -214,7 +170,7 @@ const pullpush = {
    * @param {string} parent
    * @param {string} highlight
    */
-  handle_comments_batch(comments, subreddit, parentId, highlight, IDsOfRedditComments = []) {
+  handle_comments_batch(comments, subreddit, parentId, highlight) {
     // Build comment tree structure first
     const commentMap = new Map();
     const rootComments = [];
@@ -244,18 +200,13 @@ const pullpush = {
     // Recursive render function
     const renderComment = (node, parentElement) => {
       const data = node.data;
-      const colorClass = IDsOfRedditComments.length > 0 && 
-        (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body))
-        ? "comment-red"
-        : "";
-
       const tpl_data = {
         "id": data.id,
         "author": data.author,
         "score": data.score,
         "time": formatTime(data.created_utc),
         "body": renderMarkdown(data.body),
-        "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
+        "postClass": data.id === highlight ? "post_highlight" : "post"
       };
 
       const commentDiv = document.createElement("div");

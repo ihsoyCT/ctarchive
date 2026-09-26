@@ -2,9 +2,8 @@ const axios = require("axios").default;
 import { formatTime } from "./time";
 import { addPaginationLinks, inDisplayOrder, pageRequest, withoutSkipped } from "./pagination";
 import { updateStatusLog } from "./subreddit";
+import { flattenCommentTree, markCommentStatus } from "./comment_status";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
-
-const backendUrl = "https://ihsoy.com";
 
 const add_to_url = (query, param_text, value) => {
     if (value !== undefined && value?.length > 0) {
@@ -191,7 +190,7 @@ export const artic_shift = {
         // Display comments as soon as Arctic Shift returns
         arcticCommentsPromise.then(comments => {
             comments.forEach(comment => {
-                this.handle_comment(comment, subreddit, `t3_${id}`, highlight, [], "");
+                this.handle_comment(comment, subreddit, `t3_${id}`, highlight);
             });
             if (highlight !== null) {
                 const el = document.getElementById(highlight);
@@ -204,52 +203,9 @@ export const artic_shift = {
                 updateStatusLog(`Could not load comments from Arctic_shift, skipping deleted check.`, "error");
                 return;
             }
-            // Only do the deleted check if there are less than 2000 comments
-            if (true) {
-                updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
-                if (this.comments_count > 2000) {
-                    updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
-                    return;
-                }
-                let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
-                    .then(resp => resp.status === 200 ? resp.data["ids"] : [])
-                    .catch((err) => {
-                        let errorMsg = err?.response?.data || "unknown error";
-                        console.error(err);
-                        updateStatusLog(`Could not load reddit comments: error: ${errorMsg}.`, "error");
-                        return null;
-                    });
-
-                deletedIdsPromise.then(deletedIds => {
-                    if (!deletedIds) return; // Only run if not failed
-                    const arcticIds = new Set(comments.map(c => c.data.id));
-                    const deletedIdsSet = new Set(deletedIds);
-                    // Find IDs only in one list
-                    const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
-                    // Mark comments only in one list as red
-                    onlyInArctic.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            let postDiv = el.closest('.post');
-                            if (postDiv) postDiv.classList.add('comment-red');
-                        }
-                    });
-                    // Also mark deleted/removed bodies
-                    comments.forEach(comment => {
-                        if (["[deleted]", "[removed]"].includes(comment.data.body)) {
-                            const el = document.getElementById(comment.data.id);
-                            if (el) {
-                                let postDiv = el.closest('.post');
-                                if (postDiv) postDiv.classList.add('comment-red');
-                            }
-                        }
-                    });
-                    updateStatusLog(`Done marking deleted comments.`, "success");
-                });
-            }
+            markCommentStatus(flattenCommentTree(comments));
         });
     },
-    comments_count: 0,
     /**
      * Handle and render a comment tree node (recursive, uses DocumentFragment for performance).
      * @param {object} comment
@@ -257,27 +213,20 @@ export const artic_shift = {
      * @param {string} parent
      * @param {string} highlight
      */
-    handle_comment(comment, subreddit, parent, highlight, IDsOfRedditComments = []) {
+    handle_comment(comment, subreddit, parent, highlight) {
         // Traverse all comments in the tree (no further requests)
         let queue = [comment];
         const childrenMap = {};
         while (queue.length > 0) {
-            this.comments_count++;
             let currentComment = queue.shift();
             const data = currentComment.data;
-            let colorClass = "";
-            if (IDsOfRedditComments.length > 0) {
-                if (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body)) {
-                    colorClass = "comment-red";
-                }
-            }
             let tpl_data = {
                 "id": data.id,
                 "author": data.author,
                 "score": data.score,
                 "time": formatTime(data.created_utc),
                 "body": renderMarkdown(data.body),
-                "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
+                "postClass": data.id === highlight ? "post_highlight" : "post"
             };
             if (!childrenMap[data.parent_id]) childrenMap[data.parent_id] = [];
             const tempDiv = document.createElement('div');
