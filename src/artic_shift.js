@@ -1,5 +1,5 @@
 const axios = require("axios").default;
-const moment = require("moment");
+import { formatTime } from "./time";
 import { updateStatusLog } from "./subreddit";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 
@@ -125,7 +125,7 @@ export const artic_shift = {
                 subreddit.$el.innerHTML = "";
                 const frag = document.createDocumentFragment();
                 e.data.data.forEach((sub) => {
-                    sub.time = moment.unix(sub.created_utc).format("llll");
+                    sub.time = formatTime(sub.created_utc);
                     set_thumbmail(sub);
                     const tempDiv = document.createElement('div');
 
@@ -180,7 +180,7 @@ export const artic_shift = {
             const frag = document.createDocumentFragment();
             response.data.data.forEach((post) => {
                 console.log(post);
-                post.time = moment.unix(post.created_utc).format("llll");
+                post.time = formatTime(post.created_utc);
                 post.body = renderMarkdown(post.body);
                 post.link_id = post.link_id.split("_").pop();
                 const tempDiv = document.createElement('div');
@@ -215,7 +215,7 @@ export const artic_shift = {
         root.id = `t3_${id}`;
         document.getElementById("comments").replaceChildren(root);
         axios.get(submission_url).then((e) => {
-            e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
+            e.data.data[0].time = formatTime(e.data.data[0].created_utc);
             e.data.data[0].selftext = renderMarkdown(e.data.data[0].selftext);
             set_thumbmail(e.data.data[0]);
             subreddit.$el.innerHTML = subreddit.template.submissionCompiled(e.data.data[0]);
@@ -320,7 +320,7 @@ export const artic_shift = {
                 "id": data.id,
                 "author": data.author,
                 "score": data.score,
-                "time": moment.unix(data.created_utc).format("llll"),
+                "time": formatTime(data.created_utc),
                 "body": renderMarkdown(data.body),
                 "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
             };

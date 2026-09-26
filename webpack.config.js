@@ -1,5 +1,4 @@
 const path = require("path");
-const MomentLocalesPlugin = require("moment-locales-webpack-plugin");
 const PugPlugin = require("pug-plugin");
 
 module.exports = {
@@ -18,8 +17,6 @@ module.exports = {
     ],
   },
   plugins: [
-    // To strip all locales except “en”
-    new MomentLocalesPlugin(),
     new PugPlugin(),
   ],
 };
