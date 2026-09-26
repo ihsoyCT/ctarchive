@@ -8,19 +8,19 @@ const backendUrl = "https://ihsoy.com";
 
 const add_to_url = (query, param_text, value) => {
     if (value !== undefined && value?.length > 0) {
-        query.push(`${param_text}=${value}`)
+        query.push(`${param_text}=${encodeURIComponent(value)}`)
     }
 }
 
 /**
- * Populate form fields from URLSearchParams.
- * @param {URLSearchParams} urlParams
+ * Populate form fields from the "key=value" pairs built by add_to_url.
+ * @param {string[]} query
  */
-function populateForm(urlParams) {
-    urlParams.forEach((a) => {
-        let [k, p] = a.split('=');
-        const el = document.getElementById(k);
-        if (el && typeof el.value !== 'undefined') el.value = p;
+function populateForm(query) {
+    query.forEach((pair) => {
+        const i = pair.indexOf('=');
+        const el = document.getElementById(pair.slice(0, i));
+        if (el && typeof el.value !== 'undefined') el.value = decodeURIComponent(pair.slice(i + 1));
     });
 }
 
