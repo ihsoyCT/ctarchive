@@ -197,8 +197,10 @@ window.handleSearchFormSubmit = function(e) {
     if (!el.name || el.disabled || el.type === 'submit' || el.type === 'button') return;
     // For checkboxes/radios, only add if checked
     if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
-    if (el.value !== undefined && el.value !== null && el.value !== '') {
-      params.append(el.name, el.value.trim());
+    // Trim before the empty check so whitespace-only fields are left out
+    const value = typeof el.value === 'string' ? el.value.trim() : el.value;
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(el.name, value);
     }
   });
   // Add backend and mode if present
