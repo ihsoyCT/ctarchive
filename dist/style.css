@@ -323,3 +323,78 @@ input:checked + .slider:before {
   background-color: #f7b6b6 !important;
   border: solid 2px #b22222 !important;
 }
+
+/* Long urls and words in posts must wrap instead of widening the page */
+body {
+  overflow-wrap: break-word;
+}
+.main,
+.post,
+.post_highlight {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.post pre,
+.post_highlight pre,
+.main pre {
+  overflow-x: auto;
+}
+.thumbnail img {
+  max-width: min(400px, 100%);
+  height: auto;
+}
+
+/* Phones and narrow windows */
+@media (max-width: 700px) {
+  div#content,
+  div#highlight,
+  div#comments_fix,
+  div#orphans,
+  .searchFlex,
+  .links,
+  #error.error {
+    width: auto !important;
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+  }
+  .searchFlex {
+    grid-template-columns: 1fr;
+    padding: 12px 12px 6px 12px;
+  }
+  .searchFlex input,
+  .searchFlex select {
+    font-size: 16px; /* below 16px iOS zooms in on focus */
+  }
+  .links {
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    padding: 6px 12px;
+  }
+  #toggle-images-container {
+    float: none !important;
+    margin-left: 0 !important;
+  }
+  .submissionclass {
+    flex-wrap: wrap;
+  }
+  .submissionclass h3 {
+    font-size: 1.2rem;
+  }
+  .score {
+    width: auto;
+  }
+  .main {
+    flex: 1 1 0;
+  }
+  .thumbnail {
+    flex-basis: 100%;
+    margin: 8px 0 0 0;
+  }
+  .children {
+    margin-left: 8px;
+  }
+  .pagination-link {
+    margin: 0 12px;
+    padding: 6px 10px; /* larger tap target */
+  }
+}
