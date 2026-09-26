@@ -7,6 +7,8 @@ import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const backendUrl = "https://ihsoy.com";
 
 const add_to_url = (query, param_text, value) => {
+    // Trimmed like the unencoded urls used to be (trailing spaces were lost)
+    value = typeof value === "string" ? value.trim() : value;
     if (value !== undefined && value?.length > 0) {
         query.push(`${param_text}=${encodeURIComponent(value)}`)
     }
