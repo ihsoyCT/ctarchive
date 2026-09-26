@@ -1,7 +1,7 @@
 import { updateStatusLog } from "./subreddit";
+import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const axios = require("axios").default;
 const moment = require("moment");
-const marked = require("marked");
 
 const backendUrl = "https://ihsoy.com";
 
@@ -119,13 +119,19 @@ const pullpush = {
    * @param {object} subreddit
    */
   async grab_comments(id, highlight, subreddit) {
+    if (!isRedditId(id)) {
+      updateStatusLog(`Invalid submission ID.`, "error");
+      return;
+    }
     const submission_url = `${this.link.submission}&ids=${id}`;
     updateStatusLog(`Grabbing Submission by ID from PullPush: ${id}`, "loading");
 
-    document.getElementById("comments").innerHTML = `<div id=t3_${id}></div>`;
+    const root = document.createElement("div");
+    root.id = `t3_${id}`;
+    document.getElementById("comments").replaceChildren(root);
     axios.get(submission_url).then((e) => {
       e.data.data[0].time = moment.unix(e.data.data[0].created_utc).format("llll");
-      e.data.data[0].selftext = marked.parse(e.data.data[0].selftext);
+      e.data.data[0].selftext = renderMarkdown(e.data.data[0].selftext);
       set_thumbmail(e.data.data[0]);
       subreddit.$el.innerHTML = subreddit.template.submissionCompiled(e.data.data[0]);
       updateStatusLog(`Done grabbing submission by ID from PullPush`, "success");
@@ -278,7 +284,7 @@ const pullpush = {
         "author": data.author,
         "score": data.score,
         "time": moment.unix(data.created_utc).format("llll"),
-        "body": data.body,
+        "body": renderMarkdown(data.body),
         "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
       };
 
@@ -341,7 +347,7 @@ const pullpush = {
         const frag = document.createDocumentFragment();
         e.data.data.forEach((post) => {
           post.time = moment.unix(post.created_utc).format("llll");
-          post.body = marked.parse(post.body);
+          post.body = renderMarkdown(post.body);
           post.link_id = post.link_id.split("_").pop();
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
@@ -374,7 +380,7 @@ const pullpush = {
       const processedComments = comments.map(comment => ({
         ...comment,
         time: moment.unix(comment.created_utc).format("llll"),
-        body: marked.parse(comment.body)
+        body: renderMarkdown(comment.body)
       }));
       
       // Use batch processing
@@ -478,23 +484,24 @@ function addPaginationLinks({ data, urlParams, container }) {
 }
 
 function normalize_url(url) {
-  return url.replace(/&amp;/g, "&");
+  return safeUrl(url).replace(/&amp;/g, "&");
 }
 
 function set_thumbmail(sub) {
   const imagetypes = ["jpg", "png", "gif", "jpeg"];
   
-  if (sub?.url && imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = normalize_url(sub.url);
+  sub.url = safeUrl(sub?.url);
+  if (sub.url && imagetypes.includes(sub.url.split(".").pop())) sub.thumbnail = normalize_url(sub.url);
 
   // If preview exists, collect all images[].source.url into sub.previews
   if (sub.preview && Array.isArray(sub.preview.images)) {
-    sub.previews = sub.preview.images.map(img => img.source && normalize_url(img.source.url)).filter(Boolean);
+    sub.previews = sub.preview.images.map(img => img.source && img.source.url && normalize_url(img.source.url)).filter(Boolean);
   }
   // If media_metadata exists, add all s.u from each image to sub.previews
   if (sub.media_metadata && typeof sub.media_metadata === 'object') {
     if (!sub.previews) sub.previews = [];
     Object.values(sub.media_metadata).forEach(meta => {
-      if (meta && meta.s && meta.s.u) {
+      if (meta && meta.s && safeUrl(meta.s.u)) {
         sub.previews.push(normalize_url(meta.s.u));
       }
     });

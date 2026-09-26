@@ -171,8 +171,8 @@ function updateStatusLog(message, type = "info", inPlace = false) {
   if (inPlace && type === "loading") {
     const lastMessage = errorDiv.lastElementChild;
     if (lastMessage && lastMessage.querySelector('.status-icon.spinner')) {
-      const icon = lastMessage.querySelector('.status-icon.spinner').outerHTML;
-      lastMessage.innerHTML = icon + message;
+      const icon = lastMessage.querySelector('.status-icon.spinner');
+      lastMessage.replaceChildren(icon, document.createTextNode(message));
       return;
     }
   }
@@ -199,7 +199,8 @@ function updateStatusLog(message, type = "info", inPlace = false) {
     // Use a more normal, straight cross (multiplication sign)
     icon = `<span class='status-icon error' style="font-family:monospace;font-weight:bold;">&#215;</span>`;
   }
-  line.innerHTML = icon + message;
+  line.innerHTML = icon;
+  line.appendChild(document.createTextNode(message));
   errorDiv.appendChild(line);
 
   // Hide error div if empty (no children)
