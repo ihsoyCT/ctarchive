@@ -9,37 +9,6 @@ const backendUrl = "https://ihsoy.com";
  * Pullpush backend logic for Reddit archive search.
  * @namespace pullpush
  */
-// Cache for compiled templates
-const templateCache = new Map();
-
-// Get or create compiled template
-const getCompiledTemplate = (template, data) => {
-  const key = JSON.stringify(data);
-  if (!templateCache.has(key)) {
-    templateCache.set(key, template(data));
-  }
-  return templateCache.get(key);
-};
-
-// Batch rendering constants
-const BATCH_SIZE = 100;
-
-function renderInBatches(comments, processFunction) {
-  let index = 0;
-  
-  function processBatch() {
-    const batch = comments.slice(index, index + BATCH_SIZE);
-    batch.forEach(processFunction);
-    index += BATCH_SIZE;
-    
-    if (index < comments.length) {
-      requestAnimationFrame(processBatch);
-    }
-  }
-  
-  requestAnimationFrame(processBatch);
-}
-
 const pullpush = {
   link: {
     submission: "https://api.pullpush.io/reddit/search/submission/?test",
@@ -101,7 +70,6 @@ const pullpush = {
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
           frag.appendChild(tempDiv.firstElementChild);
-          subreddit.last = sub;
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done grabbing submissions from Pullpush`, "success");
@@ -209,7 +177,6 @@ const pullpush = {
           const deletedIdsSet = new Set(deletedIds);
           // Find IDs only in one list
           const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
-          const onlyInDeleted = [...deletedIdsSet].filter(x => !arcticIds.has(x));
           // Mark comments only in one list as red
           onlyInArctic.forEach(id => {
             const el = document.getElementById(id);
@@ -287,7 +254,7 @@ const pullpush = {
       };
 
       const commentDiv = document.createElement("div");
-      commentDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, tpl_data);
+      commentDiv.innerHTML = subreddit.template.postCompiled(tpl_data);
       const commentElement = commentDiv.firstElementChild;
       
       // Render all children
@@ -350,7 +317,6 @@ const pullpush = {
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
           frag.appendChild(tempDiv.firstElementChild);
-          subreddit.last = post;
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done searching comments from Pullpush`, "success");
@@ -359,44 +325,6 @@ const pullpush = {
       .catch((e) => {
         updateStatusLog(`Error searching comments from Pullpush: ${e.message}`, "error");
       });
-  },
-
-  /**
-   * Load comments backup from Pullpush API and render them.
-   * @param {string} id
-   * @param {string} highlight
-   * @param {object} subreddit
-   * @returns {Promise<void>}
-   */
-  async loadCommentsBackup(id, highlight, subreddit) {
-    const url = this.link.commentSearch + "&link_id=" + id;
-    updateStatusLog(`Grabbing comments backup from Pullpush for ID: ${id}`, "loading");
-    try {
-      const response = await axios.get(url);
-      const comments = response.data.data;
-      // Process comments in batches for better performance
-      const processedComments = comments.map(comment => ({
-        ...comment,
-        time: formatTime(comment.created_utc),
-        body: renderMarkdown(comment.body)
-      }));
-      
-      // Use batch processing
-      const frag = document.createDocumentFragment();
-      renderInBatches(processedComments, comment => {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, comment);
-        frag.appendChild(tempDiv.firstElementChild);
-      });
-      subreddit.$el.appendChild(frag);
-      if (highlight) {
-        const highlighted = document.getElementById(highlight);
-        if (highlighted) highlighted.scrollIntoView();
-      }
-      updateStatusLog(`Done grabbing comments backup from Pullpush for ID: ${id}`, "success");
-    } catch (error) {
-      updateStatusLog(`Error grabbing comments backup from Pullpush for ID: ${id}: ${error.message}`, "error");
-    }
   },
 };
 

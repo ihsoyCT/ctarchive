@@ -21,7 +21,6 @@ function renderSearchForm(backend) {
 }
 
 window.onload = () => {
-  console.log("Page loaded");
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
   let backend = urlParams.get("backend") || "artic_shift";
@@ -38,11 +37,9 @@ window.onload = () => {
   }
 
   if (!urlParams.has("limit")) urlParams.set("limit", 100);
-  console.log("URL Params: ", urlParams.toString());
 
   // Check for Reddit-style comment URL
   const pathMatch = window.location.pathname.match(/r\/[^\/]+\/comments\/(\w+)(?:\/[^\/]+)?\/(\w+)\/?/);
-  console.log("Path Match: ", pathMatch);
   if (pathMatch) {
     const comments = pathMatch[1];
     const id = pathMatch[2];

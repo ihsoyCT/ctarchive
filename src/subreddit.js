@@ -1,6 +1,3 @@
-const axios = require("axios").default;
-const marked = require("marked");
-
 import { artic_shift } from "./artic_shift";
 import { pullpush } from "./pullpush";
 
@@ -20,16 +17,6 @@ export const Backends = Object.freeze({
  */
 export const subreddit = {
   backend: Backends.ARTIC_SHIFT,
-  link: {
-    submission:
-      "https://api.pullpush.io/reddit/search/submission/?test",
-    commentsID: "https://api.pushshift.io/reddit/submission/comment_ids/",
-    comments: "https://api.pushshift.io/reddit/search/comment?filter=id,author,parent_id,score,body,created_utc&ids=",
-    commentSearch:
-      "https://api.pullpush.io/reddit/search/comment/?test",
-    commentsBackup:
-      "https://api.pullpush.io/reddit/comment/search?sort=asc&limit=1000&link_id=",
-  },
   template: {
     submissionCompiled: require("./templates/submission.pug"),
     postCompiled: require("./templates/post.pug"),
@@ -41,31 +28,6 @@ export const subreddit = {
     a.innerHTML = "Loading Submission/Comments or you haven't done a search yet.";
     return a;
   })(),
-  requestCount: 0,
-  /**
-   * Change status (for legacy compatibility).
-   * @param {string} status
-   */
-  changeStatus(status) {
-    // No-op or could be improved for future use
-  },
-  last: null,
-  useOld: false,
-  /**
-   * Create a query string from URLSearchParams, converting date fields to epoch.
-   * @param {URLSearchParams} urlParams
-   * @returns {string}
-   */
-  createRequest(urlParams) {
-    let query = [];
-    urlParams.forEach((p, k) => {
-      if ((k === "since" || k === "until" || k === "before" || k === "after") && p !== "") {
-        p = Math.floor(new Date(p).getTime() / 1000);
-      }
-      if (p !== "" && k !== "mode") query.push(k + "=" + p);
-    });
-    return query.join("&");
-  },
   /**
    * Dispatch submission search to the correct backend.
    * @param {URLSearchParams} urlParams
@@ -96,15 +58,6 @@ export const subreddit = {
     }
   },
   /**
-   * Sleep utility (async).
-   * @param {number} ms
-   * @returns {Promise<void>}
-   */
-  sleep(ms) {
-    subreddit.changeStatus(`Waiting for: ${ms}ms`);
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  },
-  /**
    * Dispatch comment search to the correct backend.
    * @param {URLSearchParams} urlParams
    */
@@ -116,20 +69,6 @@ export const subreddit = {
       case Backends.ARTIC_SHIFT:
         artic_shift.search_comments(urlParams, subreddit)
         break;
-    }
-  },
-  /**
-   * Set the Reddit link for a submission.
-   * @param {string|null} id
-   */
-  set_reddit_link(id) {
-    const redditLinkDiv = document.getElementById("reddit_link");
-    if (!redditLinkDiv) return;
-    if (id != null) {
-      redditLinkDiv.innerHTML =
-        `<a href='https://reddit.com/${id}'>Submission on reddit</a>`;
-    } else {
-      redditLinkDiv.innerHTML = "";
     }
   },
   onModeChange(select) {

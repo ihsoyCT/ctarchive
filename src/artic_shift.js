@@ -131,7 +131,6 @@ export const artic_shift = {
 
                     tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
                     frag.appendChild(tempDiv.firstElementChild);
-                    subreddit.last = sub;
                 });
                 subreddit.$el.appendChild(frag);
                 updateStatusLog(`Done grabbing submissions from Arctic_shift`, "success");
@@ -175,18 +174,15 @@ export const artic_shift = {
         const url = `${this.base_url}${this.comments_search}?${query.join('&')}`;
         updateStatusLog(`Searching comments from Arctic_shift with params: ${urlParams.toString()}`, "loading");
         axios.get(url).then(response => {
-            console.log(response.data.data);
             subreddit.$el.innerHTML = "";
             const frag = document.createDocumentFragment();
             response.data.data.forEach((post) => {
-                console.log(post);
                 post.time = formatTime(post.created_utc);
                 post.body = renderMarkdown(post.body);
                 post.link_id = post.link_id.split("_").pop();
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
                 frag.appendChild(tempDiv.firstElementChild);
-                subreddit.last = post;
             });
             subreddit.$el.appendChild(frag);
             updateStatusLog(`Done searching comments from Arctic_shift`, "success");
@@ -248,7 +244,6 @@ export const artic_shift = {
             }
             // Only do the deleted check if there are less than 2000 comments
             if (true) {
-                console.log(this.comments_count);
                 updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
                 if (this.comments_count > 2000) {
                     updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
@@ -269,7 +264,6 @@ export const artic_shift = {
                     const deletedIdsSet = new Set(deletedIds);
                     // Find IDs only in one list
                     const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
-                    const onlyInDeleted = [...deletedIdsSet].filter(x => !arcticIds.has(x));
                     // Mark comments only in one list as red
                     onlyInArctic.forEach(id => {
                         const el = document.getElementById(id);
@@ -305,7 +299,6 @@ export const artic_shift = {
         // Traverse all comments in the tree (no further requests)
         let queue = [comment];
         const childrenMap = {};
-        console.log(`Processing comment tree for parent: ${parent}, highlight: ${highlight}, IDsOfRedditComments: ${IDsOfRedditComments.length}`);
         while (queue.length > 0) {
             this.comments_count++;
             let currentComment = queue.shift();
