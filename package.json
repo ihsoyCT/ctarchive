@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:prod": "npx webpack --config webpack.prod.js",
-    "start:dev": "npx webpack serve --config webpack.dev.js"
+    "build:prod": "npx webpack --config webpack.prod.js && npm run build:404",
+    "start:dev": "npx webpack serve --config webpack.dev.js",
+    "build:404": "node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\""
   },
   "keywords": [],
   "author": "",
