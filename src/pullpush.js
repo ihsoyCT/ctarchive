@@ -188,9 +188,9 @@ const pullpush = {
       }
       // Only do the deleted check if there are less than 2000 comments
       if (true) {
-        console.log(this.comments_count);
         updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
-        if (this.comments_count > 2000) {
+        // comments_count is only counted by the Arctic Shift renderer
+        if (allComments.length > 2000) {
           updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
           return;
         }
@@ -235,8 +235,6 @@ const pullpush = {
       updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
     }
   },
-  comments_count: 0,
-  comments_map: {},
   /**
    * Handle and render a comment tree node (recursive, uses DocumentFragment for performance).
    * @param {object} comment
