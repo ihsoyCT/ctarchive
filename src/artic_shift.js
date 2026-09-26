@@ -44,7 +44,8 @@ export const artic_shift = {
     get_submissions(urlParams, subreddit) {
         let query = [];
         const page = pageRequest(urlParams, { maxLimit: 100 });
-        // Legacy mode: if 'q' is present (even if empty), use it for 'query' and set limit to 'auto', only include relevant params
+        // Legacy mode: if 'q' is present (even if empty), use it for 'query' and only include relevant params.
+        // Arctic Shift rejects limit=auto together with a query.
         if (urlParams.has("q")) {
             add_to_url(query, "subreddit", urlParams.get("subreddit"));
             add_to_url(query, "sort", page.sort);
@@ -52,7 +53,7 @@ export const artic_shift = {
             add_to_url(query, "before", page.before);
             add_to_url(query, "author", urlParams.get("author"));
             add_to_url(query, "query", urlParams.get("q"));
-            add_to_url(query, "limit", "auto");
+            add_to_url(query, "limit", urlParams.get("q") ? page.limit : "auto");
             populateForm(query)
         } else {
             add_to_url(query, "sort", page.sort);
