@@ -1,45 +1,51 @@
 import { updateStatusLog } from "./subreddit";
+import { markCommentStatus } from "./comment_status";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const axios = require("axios").default;
 import { formatTime } from "./time";
+import { addPaginationLinks, inDisplayOrder, pageRequest, withoutSkipped } from "./pagination";
 
-const backendUrl = "https://ihsoy.com";
+// Pagination follows the sort field (created_utc, score or num_comments)
+const paginationFor = (urlParams) => ({
+  sortOrder: urlParams.get("sort"),
+  sortKey: urlParams.get("sort_type") || "created_utc",
+  container: document.getElementById("paginate"),
+});
+
+// Pullpush wants epoch seconds. Dates from the search form are datetime-local
+// strings in the viewer's time zone; cursor values are already epoch seconds.
+function toEpoch(value) {
+  if (!value) return null;
+  if (/^\d+$/.test(value)) return value;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? null : String(Math.floor(ms / 1000));
+}
+
+// API parameters for a submission or comment search
+function apiParams(urlParams) {
+  const sortKey = urlParams.get("sort_type") || "created_utc";
+  const page = pageRequest(urlParams, { maxLimit: 1000, sortKey });
+  const params = new URLSearchParams();
+  urlParams.forEach((value, key) => {
+    if (!["before", "after", "sort", "limit", "skip", "cursor", "page"].includes(key)) {
+      params.append(key, value);
+    }
+  });
+  params.set("sort", page.sort);
+  if (page.limit) params.set("limit", page.limit);
+  const before = toEpoch(page.before);
+  const after = toEpoch(page.after);
+  if (before) params.set("before", before);
+  if (after) params.set("after", after);
+  // While paging by score/num_comments the cursor replaces that form filter
+  if (page.sortFilter) params.set(sortKey, page.sortFilter);
+  return params;
+}
 
 /**
  * Pullpush backend logic for Reddit archive search.
  * @namespace pullpush
  */
-// Cache for compiled templates
-const templateCache = new Map();
-
-// Get or create compiled template
-const getCompiledTemplate = (template, data) => {
-  const key = JSON.stringify(data);
-  if (!templateCache.has(key)) {
-    templateCache.set(key, template(data));
-  }
-  return templateCache.get(key);
-};
-
-// Batch rendering constants
-const BATCH_SIZE = 100;
-
-function renderInBatches(comments, processFunction) {
-  let index = 0;
-  
-  function processBatch() {
-    const batch = comments.slice(index, index + BATCH_SIZE);
-    batch.forEach(processFunction);
-    index += BATCH_SIZE;
-    
-    if (index < comments.length) {
-      requestAnimationFrame(processBatch);
-    }
-  }
-  
-  requestAnimationFrame(processBatch);
-}
-
 const pullpush = {
   link: {
     submission: "https://api.pullpush.io/reddit/search/submission/?test",
@@ -52,42 +58,7 @@ const pullpush = {
    * @param {object} subreddit
    */
   get_submissions(urlParams, subreddit) {
-    // Create a new URLSearchParams to modify without affecting the original
-    const params = new URLSearchParams();
-    
-    const sortType = urlParams.get('sort_type') || 'created_utc';
-    
-    // Copy all parameters except those that need special handling
-    urlParams.forEach((value, key) => {
-      if (!['before', 'after', 'score'].includes(key)) {
-        params.append(key, value);
-      }
-    });
-
-    if (sortType === 'score') {
-      // Handle score-based pagination
-      const score = urlParams.get('score');
-      if (score) {
-        params.append('score', score);
-      }
-    } else {
-      // Handle before/after timestamps
-      const before = urlParams.get('before');
-      const after = urlParams.get('after');
-      
-      if (before) {
-        // If it's already a Unix timestamp, use it as is
-        const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
-        params.append('before', beforeTimestamp);
-      }
-      
-      if (after) {
-        // If it's already a Unix timestamp, use it as is
-        const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
-        params.append('after', afterTimestamp);
-      }
-    }
-
+    const params = apiParams(urlParams);
     const url = this.link.submission + "&" + params.toString();
     updateStatusLog(`Grabbing Submissions from Pullpush with params: ${params.toString()}`, "loading");
     axios
@@ -95,17 +66,18 @@ const pullpush = {
       .then((e) => {
         subreddit.$el.innerHTML = "";
         const frag = document.createDocumentFragment();
-        e.data.data.forEach((sub) => {
+        const items = inDisplayOrder(e.data.data, urlParams);
+        const shown = withoutSkipped(items, urlParams);
+        shown.forEach((sub) => {
           sub.time = formatTime(sub.created_utc);
           set_thumbmail(sub);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = subreddit.template.submissionCompiled(sub);
           frag.appendChild(tempDiv.firstElementChild);
-          subreddit.last = sub;
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done grabbing submissions from Pullpush`, "success");
-        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
+        addPaginationLinks({ data: shown, ...paginationFor(urlParams) });
       })
       .catch((e) => {
         updateStatusLog(`Error grabbing submissions from Pullpush: ${e.message}`, "error");
@@ -172,7 +144,7 @@ const pullpush = {
     // Process all collected comments
     if (allComments.length > 0) {
       // Use batch processing for better performance
-      this.handle_comments_batch(allComments, subreddit, `t3_${id}`, highlight, []);
+      this.handle_comments_batch(allComments, subreddit, `t3_${id}`, highlight);
 
       if (highlight !== null) {
         const el = document.getElementById(highlight);
@@ -186,57 +158,11 @@ const pullpush = {
         updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
         return;
       }
-      // Only do the deleted check if there are less than 2000 comments
-      if (true) {
-        console.log(this.comments_count);
-        updateStatusLog(`Loading reddit comments to highlight deleted comments.`, "loading");
-        if (this.comments_count > 2000) {
-          updateStatusLog(`Not loading deleted comments as there too many comments in this post.`, "error");
-          return;
-        }
-        let deletedIdsPromise = axios.get(`${backendUrl}/reddit-comments?post=${id}`, { timeout: 5000 })
-          .then(resp => resp.status === 200 ? resp.data["ids"] : [])
-          .catch((err) => {
-            let errorMsg = err?.response?.data || "unknown error";
-            console.error(err);
-            updateStatusLog(`Could not load reddit comments: error: ${errorMsg}.`, "error");
-            return null;
-          });
-
-        deletedIdsPromise.then(deletedIds => {
-          if (!deletedIds) return; // Only run if not failed
-          const arcticIds = new Set(allComments.map(c => c.id));
-          const deletedIdsSet = new Set(deletedIds);
-          // Find IDs only in one list
-          const onlyInArctic = [...arcticIds].filter(x => !deletedIdsSet.has(x));
-          const onlyInDeleted = [...deletedIdsSet].filter(x => !arcticIds.has(x));
-          // Mark comments only in one list as red
-          onlyInArctic.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-              let postDiv = el.closest('.post');
-              if (postDiv) postDiv.classList.add('comment-red');
-            }
-          });
-          // Also mark deleted/removed bodies
-          allComments.forEach(comment => {
-            if (["[deleted]", "[removed]"].includes(comment.body)) {
-              const el = document.getElementById(comment.id);
-              if (el) {
-                let postDiv = el.closest('.post');
-                if (postDiv) postDiv.classList.add('comment-red');
-              }
-            }
-          });
-          updateStatusLog(`Done marking deleted comments.`, "success");
-        });
-      }
+      markCommentStatus(allComments.map((c) => ({ id: c.id, body: c.body })));
     } else {
       updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
     }
   },
-  comments_count: 0,
-  comments_map: {},
   /**
    * Handle and render a comment tree node (recursive, uses DocumentFragment for performance).
    * @param {object} comment
@@ -244,7 +170,7 @@ const pullpush = {
    * @param {string} parent
    * @param {string} highlight
    */
-  handle_comments_batch(comments, subreddit, parentId, highlight, IDsOfRedditComments = []) {
+  handle_comments_batch(comments, subreddit, parentId, highlight) {
     // Build comment tree structure first
     const commentMap = new Map();
     const rootComments = [];
@@ -274,22 +200,17 @@ const pullpush = {
     // Recursive render function
     const renderComment = (node, parentElement) => {
       const data = node.data;
-      const colorClass = IDsOfRedditComments.length > 0 && 
-        (!IDsOfRedditComments.includes(data.id) || ["[deleted]", "[removed]"].includes(data.body))
-        ? "comment-red"
-        : "";
-
       const tpl_data = {
         "id": data.id,
         "author": data.author,
         "score": data.score,
         "time": formatTime(data.created_utc),
         "body": renderMarkdown(data.body),
-        "postClass": data.id === highlight ? "post_highlight " + colorClass : "post " + colorClass
+        "postClass": data.id === highlight ? "post_highlight" : "post"
       };
 
       const commentDiv = document.createElement("div");
-      commentDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, tpl_data);
+      commentDiv.innerHTML = subreddit.template.postCompiled(tpl_data);
       const commentElement = commentDiv.firstElementChild;
       
       // Render all children
@@ -312,31 +233,7 @@ const pullpush = {
    * @param {object} subreddit
    */
   search_comments(urlParams, subreddit) {
-    // Create a new URLSearchParams to modify without affecting the original
-    const params = new URLSearchParams();
-    
-    // Copy all parameters except before/after which need special handling
-    urlParams.forEach((value, key) => {
-      if (key !== 'before' && key !== 'after') {
-        params.append(key, value);
-      }
-    });
-
-    // Handle before/after timestamps
-    const before = urlParams.get('before');
-    const after = urlParams.get('after');
-    
-    if (before) {
-      // If it's already a Unix timestamp, use it as is
-      const beforeTimestamp = /^\d{10}$/.test(before) ? before : Math.floor(before / 1000);
-      params.append('before', beforeTimestamp);
-    }
-    
-    if (after) {
-      // If it's already a Unix timestamp, use it as is
-      const afterTimestamp = /^\d{10}$/.test(after) ? after : Math.floor(after / 1000);
-      params.append('after', afterTimestamp);
-    }
+    const params = apiParams(urlParams);
 
     const url = this.link.commentSearch + "&" + params.toString();
     updateStatusLog(`Searching comments from Pullpush with params: ${params.toString()}`, "loading");
@@ -345,143 +242,26 @@ const pullpush = {
       .then((e) => {
         subreddit.$el.innerHTML = "";
         const frag = document.createDocumentFragment();
-        e.data.data.forEach((post) => {
+        const items = inDisplayOrder(e.data.data, urlParams);
+        const shown = withoutSkipped(items, urlParams);
+        shown.forEach((post) => {
           post.time = formatTime(post.created_utc);
           post.body = renderMarkdown(post.body);
           post.link_id = post.link_id.split("_").pop();
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = subreddit.template.profilePostCompiled(post);
           frag.appendChild(tempDiv.firstElementChild);
-          subreddit.last = post;
         });
         subreddit.$el.appendChild(frag);
         updateStatusLog(`Done searching comments from Pullpush`, "success");
-        addPaginationLinks({ data: e.data.data, urlParams, container: document.getElementById('paginate') });
+        addPaginationLinks({ data: shown, ...paginationFor(urlParams) });
       })
       .catch((e) => {
         updateStatusLog(`Error searching comments from Pullpush: ${e.message}`, "error");
       });
   },
-
-  /**
-   * Load comments backup from Pullpush API and render them.
-   * @param {string} id
-   * @param {string} highlight
-   * @param {object} subreddit
-   * @returns {Promise<void>}
-   */
-  async loadCommentsBackup(id, highlight, subreddit) {
-    const url = this.link.commentSearch + "&link_id=" + id;
-    updateStatusLog(`Grabbing comments backup from Pullpush for ID: ${id}`, "loading");
-    try {
-      const response = await axios.get(url);
-      const comments = response.data.data;
-      // Process comments in batches for better performance
-      const processedComments = comments.map(comment => ({
-        ...comment,
-        time: formatTime(comment.created_utc),
-        body: renderMarkdown(comment.body)
-      }));
-      
-      // Use batch processing
-      const frag = document.createDocumentFragment();
-      renderInBatches(processedComments, comment => {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = getCompiledTemplate(subreddit.template.postCompiled, comment);
-        frag.appendChild(tempDiv.firstElementChild);
-      });
-      subreddit.$el.appendChild(frag);
-      if (highlight) {
-        const highlighted = document.getElementById(highlight);
-        if (highlighted) highlighted.scrollIntoView();
-      }
-      updateStatusLog(`Done grabbing comments backup from Pullpush for ID: ${id}`, "success");
-    } catch (error) {
-      updateStatusLog(`Error grabbing comments backup from Pullpush for ID: ${id}: ${error.message}`, "error");
-    }
-  },
 };
 
-function addPaginationLinks({ data, urlParams, container }) {
-  if (!data || data.length === 0) return;
-  const sortOrder = urlParams.get('sort') || 'desc';
-  const sortType = urlParams.get('sort_type') || 'created_utc';
-  
-  // Next Page (Older/Younger Posts)
-  const nextLink = document.createElement('a');
-  nextLink.className = 'pagination-link';
-
-  // Previous Page (Newer/Older Posts)
-  const prevLink = document.createElement('a');
-  prevLink.className = 'pagination-link';
-
-  if (sortType === 'score') {
-    // Score-based pagination
-    const firstScore = data[0].score;
-    const lastScore = data[data.length - 1].score;
-
-    if (sortOrder === 'desc') {
-      // Next: score<lastScore (lower scores)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('score', `<${lastScore}`);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: score>firstScore (higher scores)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('score', `>${firstScore}`);
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    } else {
-      // Next: score>lastScore (higher scores)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('score', `>${lastScore}`);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: score<firstScore (lower scores)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('score', `<${firstScore}`);
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }
-  } else {
-    // Time-based pagination
-    const firstCreatedUtc = data[0].created_utc;
-    const lastCreatedUtc = data[data.length - 1].created_utc;
-
-    if (sortOrder === 'desc') {
-      // Next: before=lastCreatedUtc (older)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('before', lastCreatedUtc);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: after=firstCreatedUtc (newer)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('after', firstCreatedUtc);
-      urlParamsPrev.delete('before');
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    } else {
-      // Next: after=lastCreatedUtc (newer)
-      nextLink.textContent = '>>';
-      const urlParamsNext = new URLSearchParams(window.location.search);
-      urlParamsNext.set('after', lastCreatedUtc);
-      nextLink.href = window.location.pathname + '?' + urlParamsNext.toString();
-      // Previous: before=firstCreatedUtc (older)
-      prevLink.textContent = '<<';
-      const urlParamsPrev = new URLSearchParams(window.location.search);
-      urlParamsPrev.set('before', firstCreatedUtc);
-      urlParamsPrev.delete('after');
-      prevLink.href = window.location.pathname + '?' + urlParamsPrev.toString();
-    }
-  }
-  // Clear container and center links
-  container.innerHTML = '';
-  const wrapper = document.createElement('div');
-  wrapper.className = 'pagination-container';
-  wrapper.appendChild(prevLink);
-  wrapper.appendChild(nextLink);
-  container.appendChild(wrapper);
-}
 
 function normalize_url(url) {
   return safeUrl(url).replace(/&amp;/g, "&");
