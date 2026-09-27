@@ -213,8 +213,9 @@ const pullpush = {
       commentDiv.innerHTML = subreddit.template.postCompiled(tpl_data);
       const commentElement = commentDiv.firstElementChild;
       
-      // Render all children
-      node.children.forEach(child => renderComment(child, commentElement));
+      // Replies go into the .children container, which provides the indent
+      const childrenContainer = commentElement.querySelector(".children") || commentElement;
+      node.children.forEach(child => renderComment(child, childrenContainer));
       
       parentElement.appendChild(commentElement);
     };
