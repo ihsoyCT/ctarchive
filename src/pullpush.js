@@ -1,4 +1,4 @@
-import { updateStatusLog } from "./subreddit";
+import { updateStatusLog, showPostNotArchived } from "./subreddit";
 import { markCommentStatus } from "./comment_status";
 import { renderMarkdown, isRedditId, safeUrl } from "./sanitize";
 const axios = require("axios").default;
@@ -102,10 +102,12 @@ const pullpush = {
     root.id = `t3_${id}`;
     document.getElementById("comments").replaceChildren(root);
     axios.get(submission_url).then((e) => {
-      e.data.data[0].time = formatTime(e.data.data[0].created_utc);
-      e.data.data[0].selftext = renderMarkdown(e.data.data[0].selftext);
-      set_thumbmail(e.data.data[0]);
-      subreddit.$el.innerHTML = subreddit.template.submissionCompiled(e.data.data[0]);
+      const post = e.data?.data?.[0];
+      if (!post) return showPostNotArchived(subreddit.$el, id, "PullPush");
+      post.time = formatTime(post.created_utc);
+      post.selftext = renderMarkdown(post.selftext);
+      set_thumbmail(post);
+      subreddit.$el.innerHTML = subreddit.template.submissionCompiled(post);
       updateStatusLog(`Done grabbing submission by ID from PullPush`, "success");
     }).catch((error) => {
       let errorMsg = error?.response?.data?.error || error.message;
@@ -155,12 +157,12 @@ const pullpush = {
 
       // Only run deleted check if comments were successfully loaded
       if (allComments.length === 0) {
-        updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
+        updateStatusLog(`No archived comments for this post.`, "info");
         return;
       }
       markCommentStatus(allComments.map((c) => ({ id: c.id, body: c.body })));
     } else {
-      updateStatusLog(`Could not load comments from PullPush, skipping deleted check.`, "error");
+      updateStatusLog(`No archived comments for this post.`, "info");
     }
   },
   /**
