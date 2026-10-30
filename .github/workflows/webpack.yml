@@ -40,5 +40,6 @@ jobs:
         git status
         git add .
         git status
+        if git diff --cached --quiet; then echo "Built site unchanged, nothing to deploy"; exit 0; fi
         git commit -m "Deploy to GitHub Pages"
         git push origin master
