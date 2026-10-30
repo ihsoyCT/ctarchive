@@ -1,5 +1,4 @@
 const path = require("path");
-const PugPlugin = require("pug-plugin");
 
 module.exports = {
   entry: "./src/index.js",
@@ -12,11 +11,8 @@ module.exports = {
     rules: [
       {
         test: /\.pug$/,
-        loader: PugPlugin.loader,
+        loader: path.resolve(__dirname, "pug-loader.js"),
       },
     ],
   },
-  plugins: [
-    new PugPlugin(),
-  ],
 };
