@@ -151,6 +151,21 @@ function updateStatusLog(message, type = "info", inPlace = false) {
 
 export { updateStatusLog };
 
+/**
+ * Explain that a post is missing from the archive and link to it on Reddit.
+ * @param {HTMLElement} container where the submission would have been shown
+ * @param {string} id validated base36 post id
+ * @param {string} archive name of the archive, e.g. "Arctic Shift"
+ */
+export function showPostNotArchived(container, id, archive) {
+  updateStatusLog(`This post is not in the ${archive} archive (yet). New posts show up there with a delay; ` +
+    `try again later or switch the backend.`, "error");
+  const link = document.createElement("a");
+  link.href = `https://www.reddit.com/comments/${id}`;
+  link.textContent = "Open this post on Reddit";
+  container.replaceChildren(link);
+}
+
 // Add spinner keyframes if not present
 if (!document.getElementById('status-spinner-style')) {
   const style = document.createElement('style');
